@@ -17,7 +17,7 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
     <!-- 頂部導覽列 -->
-    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-30">
+    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <button id="sidebar-toggle" class="md:hidden text-white focus:outline-none text-xl mr-2">
@@ -44,13 +44,13 @@
     </header>
 
     <!-- 主體版面 -->
-    <div class="flex-1 flex flex-col md:flex-row relative">
+    <div class="flex-1 flex flex-row relative min-h-0">
         
         <!-- 手機版遮罩 -->
-        <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden"></div>
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
 
-        <!-- 側邊欄：專案清單 -->
-        <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-30 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
+        <!-- 側邊欄：專案清單 (固定不隨右側滾動) -->
+        <aside id="sidebar" class="fixed md:sticky top-16 inset-y-0 left-0 z-30 w-72 h-[calc(100vh-4rem)] bg-white border-r border-slate-200 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out flex-shrink-0">
             <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <h2 class="font-bold text-slate-700 flex items-center">
                     <i class="fa-solid fa-suitcase-rolling mr-2 text-indigo-600"></i> 旅遊專案列表
@@ -73,7 +73,7 @@
             </div>
         </aside>
 
-        <!-- 右側主要內容區 -->
+        <!-- 右側主要內容區 (獨立滾動) -->
         <main class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-y-auto">
             <div id="main-content" class="max-w-5xl w-full mx-auto p-4 md:p-8 flex-1">
                 <!-- 內容將由 JavaScript 動態填入 -->
@@ -145,9 +145,7 @@
                 name: '2026 濟州島五天四夜',
                 desc: '11/23 - 11/27 全程自駕遊規劃',
                 items: [
-                    { id: '1', name: '城山日出峰', category: '景點', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', votes: { yes: ['王小明'], maybe: [], no: [] } },
-                    { id: '2', name: '咸德海水浴場', category: '景點', image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80', votes: { yes: [], maybe: ['王小明'], no: [] } },
-                    { id: '3', name: '熟成到黑豬肉專賣店', category: '美食', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80', votes: { yes: ['王小明'], maybe: [], no: [] } }
+                    { id: '1', name: '城山日出峰', category: '景點', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', votes: { yes: ['王小明'], maybe: [], no: [] } }
                 ]
             }
         ];
@@ -296,14 +294,14 @@
                     </div>
                 </div>
 
-                <!-- 新增景點表單（帶自動搜圖功能） -->
+                <!-- 新增景點表單（手動貼上照片網址） -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
                     <h3 class="font-bold text-slate-800 mb-4 flex items-center">
                         <i class="fa-solid fa-circle-plus text-indigo-600 mr-2"></i> 新增景點或餐廳
                     </h3>
                     <form onsubmit="addItem(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3">
                         <div class="md:col-span-4">
-                            <input type="text" id="item-name" required placeholder="例如：淺草寺、黑豬肉專賣店" 
+                            <input type="text" id="item-name" required placeholder="例如：城山日出峰、黑豬肉專賣店" 
                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
                         </div>
                         <div class="md:col-span-3">
@@ -315,12 +313,12 @@
                             </select>
                         </div>
                         <div class="md:col-span-3">
-                            <input type="text" id="item-image" placeholder="圖片網址 (留空自動搜圖)" 
+                            <input type="url" id="item-image" required placeholder="請貼上 Google地圖/網路照片網址" 
                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
                         </div>
                         <div class="md:col-span-2">
                             <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl transition text-sm shadow-sm flex items-center justify-center">
-                                <i class="fa-solid fa-search mr-1.5"></i> 新增並配圖
+                                <i class="fa-solid fa-plus mr-1.5"></i> 加入清單
                             </button>
                         </div>
                     </form>
@@ -334,7 +332,7 @@
                                 <i class="fa-solid fa-mountain-sun"></i>
                             </div>
                             <p class="text-slate-600 font-medium">目前還沒有景點</p>
-                            <p class="text-slate-400 text-xs mt-1">請從上方輸入名稱，系統會自動幫您搜尋現實照片並加入清單！</p>
+                            <p class="text-slate-400 text-xs mt-1">請輸入名稱並貼上真實照片網址來新增第一個景點！</p>
                         </div>
                     ` : ''}
                 </div>
@@ -343,7 +341,7 @@
             renderItems();
         }
 
-        // 新增景點與智慧自動搜圖
+        // 新增景點處理
         function addItem(e) {
             e.preventDefault();
             const nameInput = document.getElementById('item-name');
@@ -352,14 +350,9 @@
 
             const name = nameInput.value.trim();
             const category = categoryInput.value;
-            let imageUrl = imageInput.value.trim();
+            const imageUrl = imageInput.value.trim();
 
-            if (!name) return;
-
-            // 如果沒有填寫圖片網址，根據關鍵字或預設圖庫自動智慧搜圖
-            if (!imageUrl) {
-                imageUrl = getSmartImage(name, category);
-            }
+            if (!name || !imageUrl) return;
 
             const currentProj = projects.find(p => p.id === currentProjectId);
             currentProj.items.push({
@@ -374,34 +367,6 @@
             imageInput.value = '';
             renderSidebar();
             renderMainContent();
-        }
-
-        // 智慧找圖對應
-        function getSmartImage(name, category) {
-            // Unsplash 精選旅遊與美食預設庫
-            const pools = {
-                '美食': [
-                    'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
-                    'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
-                    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80'
-                ],
-                '景點': [
-                    'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80',
-                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-                    'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80'
-                ],
-                '住宿': [
-                    'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
-                    'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80'
-                ],
-                '購物': [
-                    'https://images.unsplash.com/photo-1555529771-835f59fc5efe?auto=format&fit=crop&w=800&q=80',
-                    'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80'
-                ]
-            };
-            const list = pools[category] || pools['景點'];
-            // 隨機挑選一張符合類別的高畫質真實照片
-            return list[Math.floor(Math.random() * list.length)];
         }
 
         // 渲染景點卡片
@@ -429,7 +394,7 @@
                         <span class="absolute top-3 left-3 bg-slate-900/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg">
                             ${item.category}
                         </span>
-                        <button onclick="deleteItem('${item.id}')" class="absolute top-3 right-3 bg-white/80 hover:bg-rose-600 hover:text-white text-slate-700 w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm">
+                        <button onclick="deleteItem('${item.id}')" class="absolute top-3 right-3 bg-white/80 hover:bg-rose-600 hover:text-white text-slate-700 w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm" title="刪除景點">
                             <i class="fa-solid fa-trash-can text-xs"></i>
                         </button>
                     </div>
