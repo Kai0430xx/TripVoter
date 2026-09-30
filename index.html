@@ -143,7 +143,8 @@
                 name: '2026 濟州島五天四夜',
                 desc: '11/23 - 11/27 全程自駕遊規劃',
                 items: [
-                    { id: '1', name: '城山日出峰', category: '景點', votes: { yes: ['王小明'], maybe: [], no: [] } }
+                    { id: '1', name: '城山日出峰', category: '景點', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', votes: { yes: ['王小明'], maybe: [], no: [] } },
+                    { id: '2', name: '咸德海水浴場', category: '景點', image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80', votes: { yes: [], maybe: ['王小明'], no: [] } }
                 ]
             }
         ];
@@ -294,8 +295,8 @@
                         <i class="fa-solid fa-circle-plus text-indigo-600 mr-2"></i> 新增景點或餐廳
                     </h3>
                     <form onsubmit="addItem(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3">
-                        <div class="md:col-span-7">
-                            <input type="text" id="item-name" required placeholder="輸入景點或餐廳名稱（例如：城山日出峰、咸德海水浴場）" 
+                        <div class="md:col-span-4">
+                            <input type="text" id="item-name" required placeholder="例如：城山日出峰、黑豬肉" 
                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
                         </div>
                         <div class="md:col-span-3">
@@ -306,9 +307,13 @@
                                 <option value="購物">購物 / 伴手禮</option>
                             </select>
                         </div>
+                        <div class="md:col-span-3">
+                            <input type="text" id="item-image" placeholder="照片網址 (留空自動配圖)" 
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                        </div>
                         <div class="md:col-span-2">
                             <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl transition text-sm shadow-sm flex items-center justify-center">
-                                <i class="fa-solid fa-plus mr-1.5"></i> 加入地圖
+                                <i class="fa-solid fa-plus mr-1.5"></i> 加入清單
                             </button>
                         </div>
                     </form>
@@ -322,7 +327,7 @@
                                 <i class="fa-solid fa-mountain-sun"></i>
                             </div>
                             <p class="text-slate-600 font-medium">目前還沒有景點</p>
-                            <p class="text-slate-400 text-xs mt-1">只要輸入名稱，網頁就會自動幫你產出地圖與實景預覽卡片！</p>
+                            <p class="text-slate-400 text-xs mt-1">請輸入名稱，網頁會自動帶入精美風景照！</p>
                         </div>
                     ` : ''}
                 </div>
@@ -335,23 +340,56 @@
             e.preventDefault();
             const nameInput = document.getElementById('item-name');
             const categoryInput = document.getElementById('item-category');
+            const imageInput = document.getElementById('item-image');
 
             const name = nameInput.value.trim();
             const category = categoryInput.value;
+            let imageUrl = imageInput.value.trim();
 
             if (!name) return;
+
+            if (!imageUrl) {
+                imageUrl = getSmartImage(category);
+            }
 
             const currentProj = projects.find(p => p.id === currentProjectId);
             currentProj.items.push({
                 id: 'item-' + Date.now(),
                 name: name,
                 category: category,
+                image: imageUrl,
                 votes: { yes: [], maybe: [], no: [] }
             });
 
             nameInput.value = '';
+            imageInput.value = '';
             renderSidebar();
             renderMainContent();
+        }
+
+        function getSmartImage(category) {
+            const pools = {
+                '美食': [
+                    'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80'
+                ],
+                '景點': [
+                    'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80'
+                ],
+                '住宿': [
+                    'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80'
+                ],
+                '購物': [
+                    'https://images.unsplash.com/photo-1555529771-835f59fc5efe?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80'
+                ]
+            };
+            const list = pools[category] || pools['景點'];
+            return list[Math.floor(Math.random() * list.length)];
         }
 
         function renderItems() {
@@ -369,33 +407,27 @@
                 const hasMaybe = item.votes.maybe.includes(username);
                 const hasNo = item.votes.no.includes(username);
 
-                // 自動產生 Google Maps 內嵌預覽網址
-                const mapEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(item.name)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-
                 const card = document.createElement('div');
                 card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row items-stretch transition hover:shadow-md';
                 card.innerHTML = `
-                    <!-- 左側：Google 地圖實景預覽卡 -->
+                    <!-- 景點照片 -->
                     <div class="md:w-72 h-48 md:h-auto relative bg-slate-100 flex-shrink-0">
-                        <iframe width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="${mapEmbedUrl}" class="w-full h-full border-0 pointer-events-none"></iframe>
-                        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}" target="_blank" class="absolute inset-0 z-10" title="點擊放大地圖"></a>
-                        <span class="absolute top-3 left-3 z-20 bg-slate-900/80 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg pointer-events-none">
+                        <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'">
+                        <span class="absolute top-3 left-3 bg-slate-900/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg">
                             ${item.category}
                         </span>
-                        <div class="absolute bottom-2 right-2 z-20 bg-white/90 backdrop-blur-sm text-slate-700 text-[10px] px-2 py-0.5 rounded shadow pointer-events-none">
-                            <i class="fa-solid fa-magnifying-glass-location mr-1"></i> 點擊看地圖
-                        </div>
+                        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}" target="_blank" class="absolute bottom-3 left-3 bg-white/90 hover:bg-white text-slate-700 text-xs font-medium px-2.5 py-1 rounded-lg shadow transition flex items-center">
+                            <i class="fa-solid fa-map-marked-alt text-indigo-600 mr-1.5"></i> Google 地圖
+                        </a>
+                        <button onclick="deleteItem('${item.id}')" class="absolute top-3 right-3 bg-white/80 hover:bg-rose-600 hover:text-white text-slate-700 w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm" title="刪除景點">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
                     </div>
 
-                    <!-- 右側：名稱、投票與名單 -->
+                    <!-- 景點資訊與投票區 -->
                     <div class="p-5 flex-1 flex flex-col justify-between">
                         <div>
-                            <div class="flex justify-between items-start mb-2">
-                                <h4 class="text-xl font-bold text-slate-900">${item.name}</h4>
-                                <button onclick="deleteItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 transition" title="刪除景點">
-                                    <i class="fa-solid fa-trash-can text-sm"></i>
-                                </button>
-                            </div>
+                            <h4 class="text-xl font-bold text-slate-900 mb-2">${item.name}</h4>
                             <div class="flex flex-wrap gap-2 text-xs text-slate-500 mb-4">
                                 <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium">👍 必去 (${yesCount})：${item.votes.yes.join(', ') || '無'}</span>
                                 <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-medium">🤔 考慮 (${maybeCount})：${item.votes.maybe.join(', ') || '無'}</span>
