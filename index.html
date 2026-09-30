@@ -136,6 +136,7 @@
     <script>
         let username = localStorage.getItem('tripvoter_username') || '';
         let currentProjectId = localStorage.getItem('tripvoter_current_project') || '';
+        let currentFilter = '全部'; // 預設篩選狀態
 
         let projects = JSON.parse(localStorage.getItem('tripvoter_projects')) || [
             {
@@ -221,6 +222,7 @@
 
         function switchProject(id) {
             currentProjectId = id;
+            currentFilter = 'default' in window ? currentFilter : '全部';
             renderSidebar();
             renderMainContent();
             if (window.innerWidth < 768) {
@@ -278,6 +280,13 @@
                 return;
             }
 
+            // 計算各分類數量
+            const totalCount = currentProj.items.length;
+            const attractionCount = currentProj.items.filter(i => i.category === '景點').length;
+            const foodCount = currentProj.items.filter(i => i.category === '美食').length;
+            const hotelCount = currentProj.items.filter(i => i.category === '住宿').length;
+            const shopCount = currentProj.items.filter(i => i.category === '購物').length;
+
             container.innerHTML = `
                 <!-- 專案標題列 -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -288,7 +297,7 @@
                     </div>
                 </div>
 
-                <!-- 新增景點表單（自動聯網找圖） -->
+                <!-- 新增景點表單 -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
                     <h3 class="font-bold text-slate-800 mb-4 flex items-center">
                         <i class="fa-solid fa-circle-plus text-indigo-600 mr-2"></i> 新增景點或餐廳
@@ -314,24 +323,40 @@
                     </form>
                 </div>
 
+                <!-- 分類篩選列 -->
+                <div class="flex items-center space-x-2 overflow-x-auto pb-2 mb-6">
+                    <span class="text-xs font-bold text-slate-400 mr-1"><i class="fa-solid fa-filter"></i> 篩選：</span>
+                    <button onclick="setFilter('全部')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentFilter === '全部' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}">
+                        全部 (${totalCount})
+                    </button>
+                    <button onclick="setFilter('景點')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentFilter === '景點' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}">
+                        景點 (${attractionCount})
+                    </button>
+                    <button onclick="setFilter('美食')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentFilter === '美食' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}">
+                        美食 (${foodCount})
+                    </button>
+                    <button onclick="setFilter('住宿')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentFilter === '住宿' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}">
+                        住宿 (${hotelCount})
+                    </button>
+                    <button onclick="setFilter('購物')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentFilter === '購物' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}">
+                        購物 (${shopCount})
+                    </button>
+                </div>
+
                 <!-- 景點列表清單 -->
                 <div class="space-y-4" id="items-container">
-                    ${currentProj.items.length === 0 ? `
-                        <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
-                            <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-lg">
-                                <i class="fa-solid fa-mountain-sun"></i>
-                            </div>
-                            <p class="text-slate-600 font-medium">目前還沒有景點</p>
-                            <p class="text-slate-400 text-xs mt-1">只要輸入景點名稱，系統就會自動幫你抓取真實照片！</p>
-                        </div>
-                    ` : ''}
+                    <!-- 動態帶入 -->
                 </div>
             `;
 
             renderItems();
         }
 
-        // 自動透過維基媒體公開圖庫 API 搜尋真實景點照片
+        function setFilter(filterName) {
+            currentFilter = filterName;
+            renderMainContent();
+        }
+
         async function addItem(e) {
             e.preventDefault();
             const nameInput = document.getElementById('item-name');
@@ -346,10 +371,9 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> 尋找照片中...`;
 
-            let imageUrl = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'; // 預設圖
+            let imageUrl = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80';
 
             try {
-                // 嘗試向維基百科圖庫查詢該名稱的真實照片
                 const response = await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(name)}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&format=json&origin=*`);
                 const data = await response.json();
                 
@@ -384,10 +408,29 @@
         function renderItems() {
             const container = document.getElementById('items-container');
             const currentProj = projects.find(p => p.id === currentProjectId);
-            if (!currentProj || currentProj.items.length === 0) return;
+            if (!currentProj) return;
+
+            // 根據目前篩選器過濾項目
+            let filteredItems = currentProj.items;
+            if (currentFilter !== '全部') {
+                filteredItems = currentProj.items.filter(i => i.category === currentFilter);
+            }
+
+            if (filteredItems.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+                        <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-lg">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </div>
+                        <p class="text-slate-600 font-medium">此分類目前沒有項目</p>
+                        <p class="text-slate-400 text-xs mt-1">您可以從上方新增景點，或切換至其他分類查看。</p>
+                    </div>
+                `;
+                return;
+            }
 
             container.innerHTML = '';
-            currentProj.items.forEach(item => {
+            filteredItems.forEach(item => {
                 const yesCount = item.votes.yes.length;
                 const maybeCount = item.votes.maybe.length;
                 const noCount = item.votes.no.length;
