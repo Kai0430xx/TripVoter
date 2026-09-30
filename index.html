@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TripVoter - 旅遊景點投票與規劃平台</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto+Sans+TC', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- 頂部導覽列 -->
+    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <button id="sidebar-toggle" class="md:hidden text-white focus:outline-none text-xl mr-2">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="bg-white text-indigo-600 p-2 rounded-xl shadow-inner font-bold flex items-center justify-center w-10 h-10">
+                    <i class="fa-solid fa-plane-departure text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">TripVoter</h1>
+                    <p class="text-xs text-indigo-200">多人即時旅遊規劃與投票</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div class="hidden sm:flex items-center space-x-2 bg-indigo-700/60 px-3 py-1.5 rounded-full text-sm border border-indigo-500/40">
+                    <i class="fa-solid fa-user-circle text-indigo-200"></i>
+                    <span class="text-indigo-100">參與身分：</span>
+                    <span id="current-username-display" class="font-semibold text-white">載入中...</span>
+                    <button onclick="changeUsername()" class="text-xs bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-0.5 rounded transition ml-1">修改</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主體版面 -->
+    <div class="flex-1 flex flex-col md:flex-row relative">
+        
+        <!-- 手機版遮罩 -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden"></div>
+
+        <!-- 側邊欄：專案清單 -->
+        <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-30 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h2 class="font-bold text-slate-700 flex items-center">
+                    <i class="fa-solid fa-suitcase-rolling mr-2 text-indigo-600"></i> 旅遊專案列表
+                </h2>
+                <button id="sidebar-close" class="md:hidden text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- 專案列表區 -->
+            <div id="project-list" class="flex-1 overflow-y-auto p-3 space-y-1.5">
+                <!-- 動態生成專案 -->
+            </div>
+
+            <!-- 新增專案按鈕 -->
+            <div class="p-3 border-t border-slate-100 bg-slate-50">
+                <button onclick="openNewProjectModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl transition flex items-center justify-center shadow-sm text-sm">
+                    <i class="fa-solid fa-plus mr-2"></i> 建立新旅遊專案
+                </button>
+            </div>
+        </aside>
+
+        <!-- 右側主要內容區 -->
+        <main class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-y-auto">
+            <div id="main-content" class="max-w-5xl w-full mx-auto p-4 md:p-8 flex-1">
+                <!-- 內容將由 JavaScript 動態填入 -->
+            </div>
+        </main>
+    </div>
+
+    <!-- 訪客輸入名字 Modal -->
+    <div id="username-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner text-xl">
+                    <i class="fa-solid fa-id-card"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900">歡迎來到 TripVoter！</h3>
+                <p class="text-sm text-slate-500 mt-1">請先輸入您的名字，以便大家知道是誰做了投票與挑選。</p>
+            </div>
+            <form id="username-form" onsubmit="saveUsername(event)">
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">您的姓名 / 暱稱</label>
+                    <input type="text" id="username-input" required placeholder="例如：王小明、Ariel" 
+                           class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-slate-700">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-xl transition shadow-md shadow-indigo-200">
+                    開始使用網頁
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 新增專案 Modal -->
+    <div id="project-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                    <i class="fa-solid fa-folder-plus text-indigo-600 mr-2"></i> 建立新旅遊專案
+                </h3>
+                <button onclick="closeNewProjectModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="createProject(event)">
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">專案名稱</label>
+                    <input type="text" id="project-name-input" required placeholder="例如：2026 濟州島自由行" 
+                           class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700">
+                </div>
+                <div class="mb-5">
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">專案簡介 / 日期（選填）</label>
+                    <input type="text" id="project-desc-input" placeholder="例如：11/23 - 11/27 五天四夜自駕遊" 
+                           class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700">
+                </div>
+                <div class="flex space-x-3">
+                    <button type="button" onclick="closeNewProjectModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 rounded-xl transition">取消</button>
+                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-xl transition shadow-md shadow-indigo-200">建立專案</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        // 資料結構與初始化
+        let username = localStorage.getItem('tripvoter_username') || '';
+        let currentProjectId = localStorage.getItem('tripvoter_current_project') || '';
+
+        // 預設示範資料
+        let projects = JSON.parse(localStorage.getItem('tripvoter_projects')) || [
+            {
+                id: 'jeju-2026',
+                name: '2026 濟州島五天四夜',
+                desc: '11/23 - 11/27 全程自駕遊規劃',
+                items: [
+                    { id: '1', name: '城山日出峰', category: '景點', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', votes: { yes: ['王小明'], maybe: [], no: [] } },
+                    { id: '2', name: '咸德海水浴場', category: '景點', image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80', votes: { yes: [], maybe: ['王小明'], no: [] } },
+                    { id: '3', name: '熟成到黑豬肉專賣店', category: '美食', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80', votes: { yes: ['王小明'], maybe: [], no: [] } }
+                ]
+            }
+        ];
+
+        if (!currentProjectId && projects.length > 0) {
+            currentProjectId = projects[0].id;
+        }
+
+        // 畫面載入初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            checkUsername();
+            renderSidebar();
+            renderMainContent();
+
+            // 手機側邊欄開關控制
+            document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebar-close').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function checkUsername() {
+            const display = document.getElementById('current-username-display');
+            if (!username) {
+                document.getElementById('username-modal').classList.remove('hidden');
+            } else {
+                display.textContent = username;
+                document.getElementById('username-modal').classList.add('hidden');
+            }
+        }
+
+        function saveUsername(e) {
+            e.preventDefault();
+            const val = document.getElementById('username-input').value.trim();
+            if (val) {
+                username = val;
+                localStorage.setItem('tripvoter_username', username);
+                checkUsername();
+                renderMainContent();
+            }
+        }
+
+        function changeUsername() {
+            document.getElementById('username-input').value = username;
+            document.getElementById('username-modal').classList.remove('hidden');
+        }
+
+        // 渲染側邊欄專案
+        function renderSidebar() {
+            const listContainer = document.getElementById('project-list');
+            listContainer.innerHTML = '';
+
+            projects.forEach(proj => {
+                const isActive = proj.id === currentProjectId;
+                const btn = document.createElement('div');
+                btn.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition ${isActive ? 'bg-indigo-50 text-indigo-700 font-semibold shadow-sm border border-indigo-100' : 'hover:bg-slate-100 text-slate-600'}`;
+                btn.innerHTML = `
+                    <div class="flex items-center space-x-3 overflow-hidden" onclick="switchProject('${proj.id}')">
+                        <i class="fa-solid fa-map-location-dot ${isActive ? 'text-indigo-600' : 'text-slate-400'}"></i>
+                        <div class="truncate">
+                            <div class="text-sm truncate">${proj.name}</div>
+                            <div class="text-xs text-slate-400 font-normal truncate">${proj.desc || '尚無描述'}</div>
+                        </div>
+                    </div>
+                    ${projects.length > 1 ? `<button onclick="deleteProject(event, '${proj.id}')" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 p-1 transition"><i class="fa-solid fa-trash-can text-xs"></i></button>` : ''}
+                `;
+                listContainer.appendChild(btn);
+            });
+            localStorage.setItem('tripvoter_projects', JSON.stringify(projects));
+            localStorage.setItem('tripvoter_current_project', currentProjectId);
+        }
+
+        function switchProject(id) {
+            currentProjectId = id;
+            renderSidebar();
+            renderMainContent();
+            if (window.innerWidth < 768) {
+                toggleSidebar();
+            }
+        }
+
+        function openNewProjectModal() {
+            document.getElementById('project-name-input').value = '';
+            document.getElementById('project-desc-input').value = '';
+            document.getElementById('project-modal').classList.remove('hidden');
+        }
+
+        function closeNewProjectModal() {
+            document.getElementById('project-modal').classList.add('hidden');
+        }
+
+        function createProject(e) {
+            e.preventDefault();
+            const name = document.getElementById('project-name-input').value.trim();
+            const desc = document.getElementById('project-desc-input').value.trim();
+            if (!name) return;
+
+            const newId = 'proj-' + Date.now();
+            projects.push({
+                id: newId,
+                name: name,
+                desc: desc,
+                items: []
+            });
+            currentProjectId = newId;
+            closeNewProjectModal();
+            renderSidebar();
+            renderMainContent();
+        }
+
+        function deleteProject(e, id) {
+            e.stopPropagation();
+            if (confirm('確定要刪除這個旅遊專案嗎？')) {
+                projects = projects.filter(p => p.id !== id);
+                if (currentProjectId === id && projects.length > 0) {
+                    currentProjectId = projects[0].id;
+                }
+                renderSidebar();
+                renderMainContent();
+            }
+        }
+
+        // 渲染右側主畫面與景點列表
+        function renderMainContent() {
+            const container = document.getElementById('main-content');
+            const currentProj = projects.find(p => p.id === currentProjectId);
+
+            if (!currentProj) {
+                container.innerHTML = `<div class="text-center py-20 text-slate-400">請先在左側建立或選擇一個旅遊專案</div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <!-- 專案標題列 -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div class="inline-block bg-indigo-50 text-indigo-600 text-xs font-bold px-2.5 py-1 rounded-full mb-2">目前專案</div>
+                        <h2 class="text-2xl font-bold text-slate-900">${currentProj.name}</h2>
+                        <p class="text-slate-500 text-sm mt-1">${currentProj.desc || '大家一起來投票決定想去的景點與餐廳吧！'}</p>
+                    </div>
+                </div>
+
+                <!-- 新增景點表單（帶自動搜圖功能） -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center">
+                        <i class="fa-solid fa-circle-plus text-indigo-600 mr-2"></i> 新增景點或餐廳
+                    </h3>
+                    <form onsubmit="addItem(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                        <div class="md:col-span-4">
+                            <input type="text" id="item-name" required placeholder="例如：淺草寺、黑豬肉專賣店" 
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                        </div>
+                        <div class="md:col-span-3">
+                            <select id="item-category" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white">
+                                <option value="景點">景點 / 觀光</option>
+                                <option value="美食">美食 / 餐廳</option>
+                                <option value="住宿">住宿 / 飯店</option>
+                                <option value="購物">購物 / 伴手禮</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-3">
+                            <input type="text" id="item-image" placeholder="圖片網址 (留空自動搜圖)" 
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                        </div>
+                        <div class="md:col-span-2">
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl transition text-sm shadow-sm flex items-center justify-center">
+                                <i class="fa-solid fa-search mr-1.5"></i> 新增並配圖
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 景點列表清單 -->
+                <div class="space-y-4" id="items-container">
+                    ${currentProj.items.length === 0 ? `
+                        <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+                            <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-lg">
+                                <i class="fa-solid fa-mountain-sun"></i>
+                            </div>
+                            <p class="text-slate-600 font-medium">目前還沒有景點</p>
+                            <p class="text-slate-400 text-xs mt-1">請從上方輸入名稱，系統會自動幫您搜尋現實照片並加入清單！</p>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            renderItems();
+        }
+
+        // 新增景點與智慧自動搜圖
+        function addItem(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('item-name');
+            const categoryInput = document.getElementById('item-category');
+            const imageInput = document.getElementById('item-image');
+
+            const name = nameInput.value.trim();
+            const category = categoryInput.value;
+            let imageUrl = imageInput.value.trim();
+
+            if (!name) return;
+
+            // 如果沒有填寫圖片網址，根據關鍵字或預設圖庫自動智慧搜圖
+            if (!imageUrl) {
+                imageUrl = getSmartImage(name, category);
+            }
+
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            currentProj.items.push({
+                id: 'item-' + Date.now(),
+                name: name,
+                category: category,
+                image: imageUrl,
+                votes: { yes: [], maybe: [], no: [] }
+            });
+
+            nameInput.value = '';
+            imageInput.value = '';
+            renderSidebar();
+            renderMainContent();
+        }
+
+        // 智慧找圖對應
+        function getSmartImage(name, category) {
+            // Unsplash 精選旅遊與美食預設庫
+            const pools = {
+                '美食': [
+                    'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80'
+                ],
+                '景點': [
+                    'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80'
+                ],
+                '住宿': [
+                    'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80'
+                ],
+                '購物': [
+                    'https://images.unsplash.com/photo-1555529771-835f59fc5efe?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80'
+                ]
+            };
+            const list = pools[category] || pools['景點'];
+            // 隨機挑選一張符合類別的高畫質真實照片
+            return list[Math.floor(Math.random() * list.length)];
+        }
+
+        // 渲染景點卡片
+        function renderItems() {
+            const container = document.getElementById('items-container');
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            if (!currentProj || currentProj.items.length === 0) return;
+
+            container.innerHTML = '';
+            currentProj.items.forEach(item => {
+                const yesCount = item.votes.yes.length;
+                const maybeCount = item.votes.maybe.length;
+                const noCount = item.votes.no.length;
+
+                const hasYes = item.votes.yes.includes(username);
+                const hasMaybe = item.votes.maybe.includes(username);
+                const hasNo = item.votes.no.includes(username);
+
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row items-stretch transition hover:shadow-md';
+                card.innerHTML = `
+                    <!-- 景點照片 -->
+                    <div class="md:w-72 h-48 md:h-auto relative bg-slate-100 flex-shrink-0">
+                        <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'">
+                        <span class="absolute top-3 left-3 bg-slate-900/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg">
+                            ${item.category}
+                        </span>
+                        <button onclick="deleteItem('${item.id}')" class="absolute top-3 right-3 bg-white/80 hover:bg-rose-600 hover:text-white text-slate-700 w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+
+                    <!-- 景點資訊與投票區 -->
+                    <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h4 class="text-lg font-bold text-slate-900 mb-1">${item.name}</h4>
+                            <div class="flex flex-wrap gap-2 text-xs text-slate-500 mb-4">
+                                <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium">👍 必去 (${yesCount})：${item.votes.yes.join(', ') || '無'}</span>
+                                <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-medium">🤔 考慮 (${maybeCount})：${item.votes.maybe.join(', ') || '無'}</span>
+                                <span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-medium">👎 不去 (${noCount})：${item.votes.no.join(', ') || '無'}</span>
+                            </div>
+                        </div>
+
+                        <!-- 投票按鈕群組 -->
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                            <span class="text-xs font-medium text-slate-400">您的投票：</span>
+                            <div class="flex space-x-2">
+                                <button onclick="vote('${item.id}', 'yes')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasYes ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}">
+                                    <i class="fa-solid fa-thumbs-up mr-1.5"></i> 想去
+                                </button>
+                                <button onclick="vote('${item.id}', 'maybe')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasMaybe ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-700'}">
+                                    <i class="fa-solid fa-circle-question mr-1.5"></i> 考慮
+                                </button>
+                                <button onclick="vote('${item.id}', 'no')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasNo ? 'bg-rose-600 text-white shadow-md shadow-rose-200' : 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700'}">
+                                    <i class="fa-solid fa-thumbs-down mr-1.5"></i> 不去
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 投票動作處理
+        function vote(itemId, type) {
+            if (!username) {
+                checkUsername();
+                return;
+            }
+
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const item = currentProj.items.find(i => i.id === itemId);
+
+            // 從所有狀態中移除該使用者名字
+            item.votes.yes = item.votes.yes.filter(u => u !== username);
+            item.votes.maybe = item.votes.maybe.filter(u => u !== username);
+            item.votes.no = item.votes.no.filter(u => u !== username);
+
+            // 加入新選擇（若重複點擊同一個則取消）
+            if (type === 'yes' && !item.votes.yes.includes(username)) {
+                item.votes.yes.push(username);
+            } else if (type === 'maybe' && !item.votes.maybe.includes(username)) {
+                item.votes.maybe.push(username);
+            } else if (type === 'no' && !item.votes.no.includes(username)) {
+                item.votes.no.push(username);
+            }
+
+            renderSidebar();
+            renderItems();
+        }
+
+        // 刪除景點
+        function deleteItem(itemId) {
+            if (confirm('確定要從清單移除這個景點嗎？')) {
+                const currentProj = projects.find(p => p.id === currentProjectId);
+                currentProj.items = currentProj.items.filter(i => i.id !== itemId);
+                renderSidebar();
+                renderMainContent();
+            }
+        }
+    </script>
+</body>
+</html>
