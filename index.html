@@ -136,7 +136,7 @@
     <script>
         let username = localStorage.getItem('tripvoter_username') || '';
         let currentProjectId = localStorage.getItem('tripvoter_current_project') || '';
-        let currentFilter = '全部'; // 預設篩選狀態
+        let currentFilter = '全部';
 
         let projects = JSON.parse(localStorage.getItem('tripvoter_projects')) || [
             {
@@ -222,7 +222,7 @@
 
         function switchProject(id) {
             currentProjectId = id;
-            currentFilter = 'default' in window ? currentFilter : '全部';
+            currentFilter = '全部';
             renderSidebar();
             renderMainContent();
             if (window.innerWidth < 768) {
@@ -284,7 +284,6 @@
             const totalCount = currentProj.items.length;
             const attractionCount = currentProj.items.filter(i => i.category === '景點').length;
             const foodCount = currentProj.items.filter(i => i.category === '美食').length;
-            const hotelCount = currentProj.items.filter(i => i.category === '住宿').length;
             const shopCount = currentProj.items.filter(i => i.category === '購物').length;
 
             container.innerHTML = `
@@ -311,7 +310,6 @@
                             <select id="item-category" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white">
                                 <option value="景點">景點 / 觀光</option>
                                 <option value="美食">美食 / 餐廳</option>
-                                <option value="住宿">住宿 / 飯店</option>
                                 <option value="購物">購物 / 伴手禮</option>
                             </select>
                         </div>
@@ -334,9 +332,6 @@
                     </button>
                     <button onclick="setFilter('美食')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentFilter === '美食' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}">
                         美食 (${foodCount})
-                    </button>
-                    <button onclick="setFilter('住宿')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentFilter === '住宿' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}">
-                        住宿 (${hotelCount})
                     </button>
                     <button onclick="setFilter('購物')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentFilter === '購物' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}">
                         購物 (${shopCount})
@@ -410,7 +405,6 @@
             const currentProj = projects.find(p => p.id === currentProjectId);
             if (!currentProj) return;
 
-            // 根據目前篩選器過濾項目
             let filteredItems = currentProj.items;
             if (currentFilter !== '全部') {
                 filteredItems = currentProj.items.filter(i => i.category === currentFilter);
