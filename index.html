@@ -144,7 +144,7 @@
                 name: '2026 濟州島五天四夜',
                 desc: '11/23 - 11/27 全程自駕遊規劃',
                 items: [
-                    { id: '1', name: '城山日出峰', category: '景點', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Seongsan_Ilchubong_02.jpg/800px-Seongsan_Ilchubong_02.jpg', votes: { yes: ['王小明'], maybe: [], no: [] } }
+                    { id: '1', name: '城山日出峰', category: '景點', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', votes: { yes: ['王小明'], maybe: [], no: [] } }
                 ]
             }
         ];
@@ -280,7 +280,6 @@
                 return;
             }
 
-            // 計算各分類數量
             const totalCount = currentProj.items.length;
             const attractionCount = currentProj.items.filter(i => i.category === '景點').length;
             const foodCount = currentProj.items.filter(i => i.category === '美食').length;
@@ -303,7 +302,7 @@
                     </h3>
                     <form onsubmit="addItem(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3">
                         <div class="md:col-span-7">
-                            <input type="text" id="item-name" required placeholder="輸入景點名稱（例如：城山日出峰、淺草寺）" 
+                            <input type="text" id="item-name" required placeholder="輸入景點名稱（例如：城山日出峰、黑豬肉）" 
                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
                         </div>
                         <div class="md:col-span-3">
@@ -315,7 +314,7 @@
                         </div>
                         <div class="md:col-span-2">
                             <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl transition text-sm shadow-sm flex items-center justify-center">
-                                <i class="fa-solid fa-plus mr-1.5"></i> 自動找圖新增
+                                <i class="fa-solid fa-plus mr-1.5"></i> 新增景點
                             </button>
                         </div>
                     </form>
@@ -352,36 +351,18 @@
             renderMainContent();
         }
 
-        async function addItem(e) {
+        function addItem(e) {
             e.preventDefault();
             const nameInput = document.getElementById('item-name');
             const categoryInput = document.getElementById('item-category');
-            const submitBtn = document.getElementById('submit-btn');
 
             const name = nameInput.value.trim();
             const category = categoryInput.value;
 
             if (!name) return;
 
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> 尋找照片中...`;
-
-            let imageUrl = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80';
-
-            try {
-                const response = await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(name)}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&format=json&origin=*`);
-                const data = await response.json();
-                
-                if (data.query && data.query.pages) {
-                    const pages = data.query.pages;
-                    const firstPageKey = Object.keys(pages)[0];
-                    if (pages[firstPageKey].imageinfo && pages[firstPageKey].imageinfo[0].url) {
-                        imageUrl = pages[firstPageKey].imageinfo[0].url;
-                    }
-                }
-            } catch (err) {
-                console.log('自動抓圖使用備用方案');
-            }
+            // 使用精選的 Unsplash 高畫質旅遊與美食圖庫作為智慧預設
+            let imageUrl = getSmartTravelImage(category);
 
             const currentProj = projects.find(p => p.id === currentProjectId);
             currentProj.items.push({
@@ -393,11 +374,44 @@
             });
 
             nameInput.value = '';
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = `<i class="fa-solid fa-plus mr-1.5"></i> 自動找圖新增`;
-            
             renderSidebar();
             renderMainContent();
+        }
+
+        function getSmartTravelImage(category) {
+            const pools = {
+                '美食': [
+                    'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80'
+                ],
+                '景點': [
+                    'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80'
+                ],
+                '購物': [
+                    'https://images.unsplash.com/photo-1555529771-835f59fc5efe?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?auto=format&fit=crop&w=800&q=80'
+                ]
+            };
+            const list = pools[category] || pools['景點'];
+            return list[Math.floor(Math.random() * list.length)];
+        }
+
+        function editItemImage(itemId) {
+            const newUrl = prompt('請輸入這張景點/美食的真實圖片網址（例如從 Google 圖片複製圖片網址）：');
+            if (newUrl && newUrl.trim() !== '') {
+                const currentProj = projects.find(p => p.id === currentProjectId);
+                const item = currentProj.items.find(i => i.id === itemId);
+                if (item) {
+                    item.image = newUrl.trim();
+                    renderMainContent();
+                }
+            }
         }
 
         function renderItems() {
@@ -442,9 +456,17 @@
                         <span class="absolute top-3 left-3 bg-slate-900/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg">
                             ${item.category}
                         </span>
-                        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}" target="_blank" class="absolute bottom-3 left-3 bg-white/90 hover:bg-white text-slate-700 text-xs font-medium px-2.5 py-1 rounded-lg shadow transition flex items-center">
-                            <i class="fa-solid fa-map-marked-alt text-indigo-600 mr-1.5"></i> Google 地圖
-                        </a>
+                        
+                        <!-- 功能按鈕群 -->
+                        <div class="absolute bottom-3 left-3 flex space-x-2">
+                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}" target="_blank" class="bg-white/90 hover:bg-white text-slate-700 text-xs font-medium px-2.5 py-1 rounded-lg shadow transition flex items-center">
+                                <i class="fa-solid fa-map-marked-alt text-indigo-600 mr-1"></i> 地圖
+                            </a>
+                            <button onclick="editItemImage('${item.id}')" class="bg-white/90 hover:bg-white text-slate-700 text-xs font-medium px-2.5 py-1 rounded-lg shadow transition flex items-center" title="更換照片">
+                                <i class="fa-solid fa-pen text-indigo-600 mr-1"></i> 換圖
+                            </button>
+                        </div>
+
                         <button onclick="deleteItem('${item.id}')" class="absolute top-3 right-3 bg-white/80 hover:bg-rose-600 hover:text-white text-slate-700 w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm" title="刪除景點">
                             <i class="fa-solid fa-trash-can text-xs"></i>
                         </button>
@@ -471,7 +493,7 @@
                                 <button onclick="vote('${item.id}', 'maybe')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasMaybe ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-700'}">
                                     <i class="fa-solid fa-circle-question mr-1.5"></i> 考慮
                                 </button>
-                                <button onclick="vote('${item.id}', 'no')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasNo ? 'bg-rose-600 text-white shadow-md shadow-rose-200' : 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700'}">
+                                <button onclick="vote('${item.id}', 'no')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasNo ? 'bg-rose-600 text-white shadow-md shadow-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700'}">
                                     <i class="fa-solid fa-thumbs-down mr-1.5"></i> 不去
                                 </button>
                             </div>
