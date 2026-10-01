@@ -505,7 +505,6 @@
             }
         }
 
-        // 顯示誰投票了的彈窗
         function showVoters(itemId, type) {
             const currentProj = projects.find(p => p.id === currentProjectId);
             const item = currentProj.items.find(i => i.id === itemId);
@@ -549,6 +548,19 @@
                 const yesCount = item.votes.yes.length;
                 const maybeCount = item.votes.maybe.length;
                 const noCount = item.votes.no.length;
+
+                // 根據是否有票數來決定動態底色與文字粗細
+                const yesClass = yesCount > 0 
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 font-bold' 
+                    : 'bg-emerald-50 text-emerald-700 font-medium hover:bg-emerald-100';
+
+                const maybeClass = maybeCount > 0 
+                    ? 'bg-amber-500 text-white shadow-md shadow-amber-200 font-bold' 
+                    : 'bg-amber-50 text-amber-700 font-medium hover:bg-amber-100';
+
+                const noClass = noCount > 0 
+                    ? 'bg-rose-600 text-white shadow-md shadow-rose-200 font-bold' 
+                    : 'bg-rose-50 text-rose-700 font-medium hover:bg-rose-100';
 
                 const hasYes = item.votes.yes.includes(username);
                 const hasMaybe = item.votes.maybe.includes(username);
@@ -595,16 +607,16 @@
                                     </button>
                                 </h4>
                             </div>
-                            <!-- 投票統計數量（點擊可看名單） -->
-                            <div class="flex flex-wrap gap-2 text-xs text-slate-500 mb-2">
-                                <button onclick="showVoters('${item.id}', 'yes')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg font-medium transition flex items-center shadow-sm" title="點擊查看誰投了想去">
-                                    👍 必去 (${yesCount}) <i class="fa-solid fa-users text-[10px] ml-1.5 opacity-60"></i>
+                            <!-- 投票統計數量（有票時自動變深色背景） -->
+                            <div class="flex flex-wrap gap-2 text-xs mb-2">
+                                <button onclick="showVoters('${item.id}', 'yes')" class="${yesClass} px-2.5 py-1 rounded-lg transition flex items-center shadow-sm" title="點擊查看誰投了想去">
+                                    👍 必去 (${yesCount}) <i class="fa-solid fa-users text-[10px] ml-1.5 opacity-80"></i>
                                 </button>
-                                <button onclick="showVoters('${item.id}', 'maybe')" class="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2.5 py-1 rounded-lg font-medium transition flex items-center shadow-sm" title="點擊查看誰投了考慮">
-                                    🤔 考慮 (${maybeCount}) <i class="fa-solid fa-users text-[10px] ml-1.5 opacity-60"></i>
+                                <button onclick="showVoters('${item.id}', 'maybe')" class="${maybeClass} px-2.5 py-1 rounded-lg transition flex items-center shadow-sm" title="點擊查看誰投了考慮">
+                                    🤔 考慮 (${maybeCount}) <i class="fa-solid fa-users text-[10px] ml-1.5 opacity-80"></i>
                                 </button>
-                                <button onclick="showVoters('${item.id}', 'no')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1 rounded-lg font-medium transition flex items-center shadow-sm" title="點擊查看誰投了不去">
-                                    👎 不去 (${noCount}) <i class="fa-solid fa-users text-[10px] ml-1.5 opacity-60"></i>
+                                <button onclick="showVoters('${item.id}', 'no')" class="${noClass} px-2.5 py-1 rounded-lg transition flex items-center shadow-sm" title="點擊查看誰投了不去">
+                                    👎 不去 (${noCount}) <i class="fa-solid fa-users text-[10px] ml-1.5 opacity-80"></i>
                                 </button>
                             </div>
 
@@ -649,12 +661,10 @@
 
             const hasAlreadyVoted = item.votes[type].includes(username);
 
-            // 先清掉該使用者在所有選項的投票
             item.votes.yes = item.votes.yes.filter(u => u !== username);
             item.votes.maybe = item.votes.maybe.filter(u => u !== username);
             item.votes.no = item.votes.no.filter(u => u !== username);
 
-            // 如果原本沒投過這個選項，就加上去；如果原本已經投過了（再點一次），就不加回去（達到取消效果）
             if (!hasAlreadyVoted) {
                 item.votes[type].push(username);
             }
