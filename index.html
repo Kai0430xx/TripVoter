@@ -66,7 +66,7 @@
 
             <!-- 專案列表區 -->
             <div id="project-list" class="flex-1 overflow-y-auto p-3 space-y-1.5">
-                <!-- 動態生成專案 -->
+                <div class="text-center py-6 text-slate-400 text-xs">載入專案中...</div>
             </div>
 
             <!-- 新增專案按鈕 -->
@@ -80,7 +80,10 @@
         <!-- 右側主要內容區 -->
         <main class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-y-auto">
             <div id="main-content" class="max-w-5xl w-full mx-auto p-4 md:p-8 flex-1">
-                <!-- 內容將由 JavaScript 動態填入 -->
+                <div class="text-center py-20 text-slate-400">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-indigo-600"></i>
+                    <p>正在從雲端載入行程資料...</p>
+                </div>
             </div>
         </main>
     </div>
@@ -158,23 +161,23 @@
         let username = localStorage.getItem('tripvoter_username') || '';
         let currentProjectId = localStorage.getItem('tripvoter_current_project') || '';
         let currentFilter = '全部';
-        let projects = JSON.parse(localStorage.getItem('tripvoter_projects')) || [];
+        let projects = [];
 
         function initFirestoreListener() {
-            db.collection("tripvoter_data").doc("main").onSnapshot((doc) => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    if (data.projects && data.projects.length > 0) {
-                        projects = data.projects;
-                        if (!currentProjectId || !projects.find(p => p.id === currentProjectId)) {
-                            currentProjectId = projects[0].id;
+            try {
+                db.collection("tripvoter_data").doc("main").onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.projects && data.projects.length > 0) {
+                            projects = data.projects;
+                            if (!currentProjectId || !projects.find(p => p.id === currentProjectId)) {
+                                currentProjectId = projects[0].id;
+                            }
+                            renderSidebar();
+                            renderMainContent();
                         }
-                        renderSidebar();
-                        renderMainContent();
-                    }
-                } else {
-                    // 如果雲端是空的，把本地現有的資料上傳上去
-                    if (projects.length === 0) {
+                    } else {
+                        // 雲端無資料時寫入預設
                         projects = [
                             {
                                 id: 'jeju-2026',
@@ -186,12 +189,26 @@
                             }
                         ];
                         currentProjectId = projects[0].id;
+                        saveDataToCloud();
                     }
-                    saveDataToCloud();
-                }
-            }, (error) => {
-                console.error("雲端監聽錯誤：", error);
-            });
+                }, (error) => {
+                    console.error("雲端監聽錯誤：", error);
+                    loadFallbackLocal();
+                });
+            } catch (err) {
+                console.error("初始化失敗：", err);
+                loadFallbackLocal();
+            }
+        }
+
+        function loadFallbackLocal() {
+            projects = JSON.parse(localStorage.getItem('tripvoter_projects')) || [];
+            if (projects.length === 0) {
+                projects = [{ id: 'jeju-2026', name: '2026 濟州島五天四夜', desc: '本地備用行程', items: [] }];
+            }
+            if (!currentProjectId) currentProjectId = projects[0].id;
+            renderSidebar();
+            renderMainContent();
         }
 
         function saveDataToCloud() {
@@ -206,10 +223,9 @@
             });
         }
 
-        // 手動同步按鈕
         function manualSync() {
             saveDataToCloud();
-            alert("已強制同步至雲端！請通知朋友重新整理網頁。");
+            alert("已強制同步至雲端！");
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -495,6 +511,7 @@
                 if (item) {
                     item.image = newUrl.trim();
                     saveDataToCloud();
+                    renderSidebar();
                     renderMainContent();
                 }
             }
@@ -509,6 +526,7 @@
             if (newDesc !== null) {
                 item.desc = newDesc.trim();
                 saveDataToCloud();
+                renderSidebar();
                 renderMainContent();
             }
         }
@@ -530,6 +548,7 @@
             if (newMapUrl !== null) {
                 item.mapUrl = newMapUrl.trim();
                 saveDataToCloud();
+                renderSidebar();
                 renderMainContent();
             }
         }
