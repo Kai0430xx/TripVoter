@@ -144,7 +144,7 @@
                 name: '2026 濟州島五天四夜',
                 desc: '11/23 - 11/27 全程自駕遊規劃',
                 items: [
-                    { id: '1', name: '城山日出峰', category: '景點', desc: '位於濟州島東邊的巨大火山岩，是看日出的絕佳勝景。', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', votes: { yes: ['王小明'], maybe: [], no: [] } }
+                    { id: '1', name: '城山日出峰', category: '景點', desc: '位於濟州島東邊的巨大火山岩，是看日出的絕佳勝景。', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', mapUrl: '', votes: { yes: ['王小明'], maybe: [], no: [] } }
                 ]
             }
         ];
@@ -384,6 +384,7 @@
                 category: category,
                 desc: desc,
                 image: imageUrl,
+                mapUrl: '', // 預設空，會自動導向 Google 搜尋
                 votes: { yes: [], maybe: [], no: [] }
             });
 
@@ -418,6 +419,20 @@
             return list[Math.floor(Math.random() * list.length)];
         }
 
+        function editItemName(itemId) {
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const item = currentProj.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            const newName = prompt('請修改項目名稱：', item.name);
+            if (newName && newName.trim() !== '') {
+                item.name = newName.trim();
+                saveData();
+                renderSidebar();
+                renderMainContent();
+            }
+        }
+
         function editItemImage(itemId) {
             const newUrl = prompt('請輸入這張圖片的真實網址：');
             if (newUrl && newUrl.trim() !== '') {
@@ -439,6 +454,19 @@
             const newDesc = prompt('請修改此項目的簡短介紹：', item.desc || '');
             if (newDesc !== null) {
                 item.desc = newDesc.trim();
+                saveData();
+                renderMainContent();
+            }
+        }
+
+        function editItemMap(itemId) {
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const item = currentProj.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            const newMapUrl = prompt('請貼上正確的 Google 地圖網址（留空則使用自動名稱搜尋）：', item.mapUrl || '');
+            if (newMapUrl !== null) {
+                item.mapUrl = newMapUrl.trim();
                 saveData();
                 renderMainContent();
             }
@@ -477,10 +505,13 @@
                 const hasMaybe = item.votes.maybe.includes(username);
                 const hasNo = item.votes.no.includes(username);
 
+                // 如果有自訂地圖連結就用自訂的，沒有則自動用名稱連去 Google 搜尋
+                const finalMapUrl = item.mapUrl ? item.mapUrl : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
+
                 const card = document.createElement('div');
                 card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row items-stretch transition hover:shadow-md';
                 card.innerHTML = `
-                    <!-- 左側固定高度圖片區（強制統一尺寸：w-72、h-52，不管照片比例如何一律完美裁切填滿） -->
+                    <!-- 左側固定高度圖片區 -->
                     <div class="md:w-72 h-52 flex-shrink-0 relative bg-slate-100 overflow-hidden">
                         <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'">
                         <span class="absolute top-3 left-3 bg-slate-900/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg z-10">
@@ -489,9 +520,12 @@
                         
                         <!-- 功能按鈕群 -->
                         <div class="absolute bottom-3 left-3 flex space-x-1.5 z-10">
-                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}" target="_blank" class="bg-white/90 hover:bg-white text-slate-700 text-xs font-medium px-2.5 py-1 rounded-lg shadow transition flex items-center">
+                            <a href="${finalMapUrl}" target="_blank" class="bg-white/90 hover:bg-white text-slate-700 text-xs font-medium px-2.5 py-1 rounded-lg shadow transition flex items-center" title="查看地圖">
                                 <i class="fa-solid fa-map-marked-alt text-indigo-600 mr-1"></i> 地圖
                             </a>
+                            <button onclick="editItemMap('${item.id}')" class="bg-white/90 hover:bg-white text-slate-700 text-xs font-medium px-2 py-1 rounded-lg shadow transition flex items-center" title="設定地圖連結">
+                                <i class="fa-solid fa-link text-indigo-600"></i>
+                            </button>
                             <button onclick="editItemImage('${item.id}')" class="bg-white/90 hover:bg-white text-slate-700 text-xs font-medium px-2.5 py-1 rounded-lg shadow transition flex items-center" title="更換照片">
                                 <i class="fa-solid fa-pen text-indigo-600 mr-1"></i> 換圖
                             </button>
@@ -502,11 +536,16 @@
                         </button>
                     </div>
 
-                    <!-- 右側內容與投票區（鎖定固定高度與內部均分） -->
+                    <!-- 右側內容與投票區 -->
                     <div class="p-5 flex-1 flex flex-col justify-between h-52">
                         <div>
-                            <div class="flex justify-between items-start mb-1">
-                                <h4 class="text-xl font-bold text-slate-900 truncate">${item.name}</h4>
+                            <div class="flex justify-between items-center mb-1">
+                                <h4 class="text-xl font-bold text-slate-900 truncate flex items-center">
+                                    ${item.name}
+                                    <button onclick="editItemName('${item.id}')" class="ml-2 text-slate-400 hover:text-indigo-600 text-xs p-1" title="修改標題名稱">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                </h4>
                             </div>
                             <div class="flex flex-wrap gap-2 text-xs text-slate-500 mb-2">
                                 <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium">👍 必去 (${yesCount})：${item.votes.yes.join(', ') || '無'}</span>
@@ -533,7 +572,7 @@
                                 <button onclick="vote('${item.id}', 'maybe')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasMaybe ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-700'}">
                                     <i class="fa-solid fa-circle-question mr-1.5"></i> 考慮
                                 </button>
-                                <button onclick="vote('${item.id}', 'no')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasNo ? 'bg-rose-600 text-white shadow-md shadow-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-rose-700'}">
+                                <button onclick="vote('${item.id}', 'no')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasNo ? 'bg-rose-600 text-white shadow-md shadow-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700'}">
                                     <i class="fa-solid fa-thumbs-down mr-1.5"></i> 不去
                                 </button>
                             </div>
