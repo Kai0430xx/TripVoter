@@ -66,7 +66,7 @@
 
             <!-- 專案列表區 -->
             <div id="project-list" class="flex-1 overflow-y-auto p-3 space-y-1.5">
-                <div class="text-center py-6 text-slate-400 text-xs">載入專案中...</div>
+                <!-- 動態生成專案 -->
             </div>
 
             <!-- 新增專案按鈕 -->
@@ -80,10 +80,7 @@
         <!-- 右側主要內容區 -->
         <main class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-y-auto">
             <div id="main-content" class="max-w-5xl w-full mx-auto p-4 md:p-8 flex-1">
-                <div class="text-center py-20 text-slate-400">
-                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-indigo-600"></i>
-                    <p>正在從雲端載入行程資料...</p>
-                </div>
+                <!-- 內容將由 JavaScript 動態填入 -->
             </div>
         </main>
     </div>
@@ -161,54 +158,44 @@
         let username = localStorage.getItem('tripvoter_username') || '';
         let currentProjectId = localStorage.getItem('tripvoter_current_project') || '';
         let currentFilter = '全部';
-        let projects = [];
+        let projects = JSON.parse(localStorage.getItem('tripvoter_projects')) || [];
 
         function initFirestoreListener() {
-            try {
-                db.collection("tripvoter_data").doc("main").onSnapshot((doc) => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        if (data.projects && data.projects.length > 0) {
-                            projects = data.projects;
-                            if (!currentProjectId || !projects.find(p => p.id === currentProjectId)) {
-                                currentProjectId = projects[0].id;
-                            }
-                            renderSidebar();
-                            renderMainContent();
-                        }
-                    } else {
-                        // 雲端無資料時寫入預設
-                        projects = [
-                            {
-                                id: 'jeju-2026',
-                                name: '2026 濟州島五天四夜',
-                                desc: '11/23 - 11/27 全程自駕遊規劃',
-                                items: [
-                                    { id: '1', name: '城山日出峰', category: '景點', desc: '位於濟州島東邊的巨大火山岩，是看日出的絕佳勝景。', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', mapUrl: '', votes: { yes: ['王小明'], maybe: [], no: [] } }
-                                ]
-                            }
-                        ];
-                        currentProjectId = projects[0].id;
-                        saveDataToCloud();
-                    }
-                }, (error) => {
-                    console.error("雲端監聽錯誤：", error);
-                    loadFallbackLocal();
-                });
-            } catch (err) {
-                console.error("初始化失敗：", err);
-                loadFallbackLocal();
-            }
-        }
-
-        function loadFallbackLocal() {
-            projects = JSON.parse(localStorage.getItem('tripvoter_projects')) || [];
+            // 先用本地資料秒開畫面，避免轉圈圈卡死
             if (projects.length === 0) {
-                projects = [{ id: 'jeju-2026', name: '2026 濟州島五天四夜', desc: '本地備用行程', items: [] }];
+                projects = [
+                    {
+                        id: 'jeju-2026',
+                        name: '2026 濟州島五天四夜',
+                        desc: '11/23 - 11/27 全程自駕遊規劃',
+                        items: [
+                            { id: '1', name: '城山日出峰', category: '景點', desc: '位於濟州島東邊的巨大火山岩，是看日出的絕佳勝景。', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', mapUrl: '', votes: { yes: ['王小明'], maybe: [], no: [] } }
+                        ]
+                    }
+                ];
             }
             if (!currentProjectId) currentProjectId = projects[0].id;
             renderSidebar();
             renderMainContent();
+
+            // 同步嘗試從雲端抓取最新資料
+            db.collection("tripvoter_data").doc("main").onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.projects && data.projects.length > 0) {
+                        projects = data.projects;
+                        if (!currentProjectId || !projects.find(p => p.id === currentProjectId)) {
+                            currentProjectId = projects[0].id;
+                        }
+                        renderSidebar();
+                        renderMainContent();
+                    }
+                } else {
+                    saveDataToCloud();
+                }
+            }, (error) => {
+                console.log("雲端連線失敗，使用本地備用資料", error);
+            });
         }
 
         function saveDataToCloud() {
@@ -217,7 +204,7 @@
             db.collection("tripvoter_data").doc("main").set({
                 projects: projects
             }).then(() => {
-                console.log("資料已成功同步至雲端！");
+                console.log("雲端同步成功！");
             }).catch((error) => {
                 console.error("雲端儲存失敗: ", error);
             });
