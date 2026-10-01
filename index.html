@@ -65,7 +65,7 @@
                 <!-- 動態生成專案 -->
             </div>
 
-            <!-- 新增專案按鈕 -->
+            <!-- 新專案按鈕 -->
             <div class="p-3 border-t border-slate-100 bg-slate-50">
                 <button onclick="openNewProjectModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl transition flex items-center justify-center shadow-sm text-sm">
                     <i class="fa-solid fa-plus mr-2"></i> 建立新旅遊專案
@@ -480,15 +480,15 @@
                 const card = document.createElement('div');
                 card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row items-stretch transition hover:shadow-md';
                 card.innerHTML = `
-                    <!-- 左側固定高度圖片區 -->
-                    <div class="md:w-72 h-52 md:h-auto relative bg-slate-100 flex-shrink-0">
+                    <!-- 左側固定高度圖片區（強制統一寬高、等比裁切不變形） -->
+                    <div class="md:w-72 h-52 md:h-auto relative bg-slate-100 flex-shrink-0 overflow-hidden">
                         <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'">
-                        <span class="absolute top-3 left-3 bg-slate-900/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg">
+                        <span class="absolute top-3 left-3 bg-slate-900/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg z-10">
                             ${item.category}
                         </span>
                         
                         <!-- 功能按鈕群 -->
-                        <div class="absolute bottom-3 left-3 flex space-x-1.5">
+                        <div class="absolute bottom-3 left-3 flex space-x-1.5 z-10">
                             <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}" target="_blank" class="bg-white/90 hover:bg-white text-slate-700 text-xs font-medium px-2.5 py-1 rounded-lg shadow transition flex items-center">
                                 <i class="fa-solid fa-map-marked-alt text-indigo-600 mr-1"></i> 地圖
                             </a>
@@ -497,7 +497,7 @@
                             </button>
                         </div>
 
-                        <button onclick="deleteItem('${item.id}')" class="absolute top-3 right-3 bg-white/80 hover:bg-rose-600 hover:text-white text-slate-700 w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm" title="刪除景點">
+                        <button onclick="deleteItem('${item.id}')" class="absolute top-3 right-3 bg-white/80 hover:bg-rose-600 hover:text-white text-slate-700 w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm z-10" title="刪除景點">
                             <i class="fa-solid fa-trash-can text-xs"></i>
                         </button>
                     </div>
