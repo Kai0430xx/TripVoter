@@ -33,10 +33,6 @@
             </div>
             
             <div class="flex items-center space-x-3">
-                <!-- 手動同步按鈕 -->
-                <button onclick="manualSync()" class="bg-indigo-500 hover:bg-indigo-400 text-white text-xs px-3 py-1.5 rounded-xl font-medium transition shadow-sm flex items-center" title="強制將當前畫面推送到雲端">
-                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i> 推送到雲端
-                </button>
                 <div class="hidden sm:flex items-center space-x-2 bg-indigo-700/60 px-3 py-1.5 rounded-full text-sm border border-indigo-500/40">
                     <i class="fa-solid fa-user-circle text-indigo-200"></i>
                     <span class="text-indigo-100">身分：</span>
@@ -108,7 +104,7 @@
         </div>
     </div>
 
-    <!-- 新專案 Modal -->
+    <!-- 新增專案 Modal -->
     <div id="project-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div class="flex justify-between items-center mb-4">
@@ -161,28 +157,24 @@
         let projects = [];
 
         function initFirestoreListener() {
-            // 雲端即時監聽（雲端資料擁有絕對優先權）
             db.collection("tripvoter_data").doc("main").onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
-                    if (data.projects && data.projects.length > 0) {
+                    if (data.projects) {
                         projects = data.projects;
                         if (!currentProjectId || !projects.find(p => p.id === currentProjectId)) {
-                            currentProjectId = projects[0].id;
+                            if (projects.length > 0) currentProjectId = projects[0].id;
                         }
                         renderSidebar();
                         renderMainContent();
                     }
                 } else {
-                    // 若雲端真的完全是空的，才寫入預設
                     projects = [
                         {
-                            id: 'jeju-2026',
-                            name: '2026 濟州島五天四夜',
-                            desc: '11/23 - 11/27 全程自駕遊規劃',
-                            items: [
-                                { id: '1', name: '城山日出峰', category: '景點', desc: '位於濟州島東邊的巨大火山岩，是看日出的絕佳勝景。', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', mapUrl: '', votes: { yes: ['王小明'], maybe: [], no: [] } }
-                            ]
+                            id: 'proj-' + Date.now(),
+                            name: '我的旅遊專案',
+                            desc: '點擊下方建立新專案或新增景點',
+                            items: []
                         }
                     ];
                     currentProjectId = projects[0].id;
@@ -190,25 +182,15 @@
                 }
             }, (error) => {
                 console.error("雲端連線失敗：", error);
-                alert("無法連線至雲端資料庫，請檢查網路連線。");
             });
         }
 
         function saveDataToCloud() {
             db.collection("tripvoter_data").doc("main").set({
                 projects: projects
-            }).then(() => {
-                console.log("雲端同步成功！");
             }).catch((error) => {
                 console.error("雲端儲存失敗: ", error);
             });
-        }
-
-        function manualSync() {
-            if (confirm("確定要將當前畫面的所有資料推送到雲端嗎？")) {
-                saveDataToCloud();
-                alert("已成功推送到雲端！");
-            }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -312,8 +294,6 @@
             currentProjectId = newId;
             closeNewProjectModal();
             saveDataToCloud();
-            renderSidebar();
-            renderMainContent();
         }
 
         function deleteProject(e, id) {
@@ -324,8 +304,6 @@
                     currentProjectId = projects[0].id;
                 }
                 saveDataToCloud();
-                renderSidebar();
-                renderMainContent();
             }
         }
 
@@ -445,8 +423,6 @@
             nameInput.value = '';
             descInput.value = '';
             saveDataToCloud();
-            renderSidebar();
-            renderMainContent();
         }
 
         function getSmartTravelImage(category) {
@@ -482,8 +458,6 @@
             if (newName && newName.trim() !== '') {
                 item.name = newName.trim();
                 saveDataToCloud();
-                renderSidebar();
-                renderMainContent();
             }
         }
 
@@ -495,8 +469,6 @@
                 if (item) {
                     item.image = newUrl.trim();
                     saveDataToCloud();
-                    renderSidebar();
-                    renderMainContent();
                 }
             }
         }
@@ -510,8 +482,6 @@
             if (newDesc !== null) {
                 item.desc = newDesc.trim();
                 saveDataToCloud();
-                renderSidebar();
-                renderMainContent();
             }
         }
 
@@ -528,12 +498,26 @@
             const item = currentProj.items.find(i => i.id === itemId);
             if (!item) return;
 
-            const newMapUrl = prompt('請貼上正確的 Google 地圖網址（留空則使用自動名稱搜尋）：', item.mapUrl || '');
+            const newMapUrl = prompt('請貼上正確的地圖網址：', item.mapUrl || '');
             if (newMapUrl !== null) {
                 item.mapUrl = newMapUrl.trim();
                 saveDataToCloud();
-                renderSidebar();
-                renderMainContent();
+            }
+        }
+
+        // 顯示誰投票了的彈窗
+        function showVoters(itemId, type) {
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const item = currentProj.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            const typeNames = { yes: '👍 必去', maybe: '🤔 考慮', no: '👎 不去' };
+            const names = item.votes[type];
+            
+            if (names.length === 0) {
+                alert(`目前沒有人投「${typeNames[type]}」`);
+            } else {
+                alert(`【${item.name}】\n投「${typeNames[type]}」的名單：\n\n- ${names.join('\n- ')}`);
             }
         }
 
@@ -611,10 +595,17 @@
                                     </button>
                                 </h4>
                             </div>
+                            <!-- 投票統計數量（點擊可看名單） -->
                             <div class="flex flex-wrap gap-2 text-xs text-slate-500 mb-2">
-                                <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium">👍 必去 (${yesCount})：${item.votes.yes.join(', ') || '無'}</span>
-                                <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-medium">🤔 考慮 (${maybeCount})：${item.votes.maybe.join(', ') || '無'}</span>
-                                <span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-medium">👎 不去 (${noCount})：${item.votes.no.join(', ') || '無'}</span>
+                                <button onclick="showVoters('${item.id}', 'yes')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg font-medium transition flex items-center shadow-sm" title="點擊查看誰投了想去">
+                                    👍 必去 (${yesCount}) <i class="fa-solid fa-users text-[10px] ml-1.5 opacity-60"></i>
+                                </button>
+                                <button onclick="showVoters('${item.id}', 'maybe')" class="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2.5 py-1 rounded-lg font-medium transition flex items-center shadow-sm" title="點擊查看誰投了考慮">
+                                    🤔 考慮 (${maybeCount}) <i class="fa-solid fa-users text-[10px] ml-1.5 opacity-60"></i>
+                                </button>
+                                <button onclick="showVoters('${item.id}', 'no')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1 rounded-lg font-medium transition flex items-center shadow-sm" title="點擊查看誰投了不去">
+                                    👎 不去 (${noCount}) <i class="fa-solid fa-users text-[10px] ml-1.5 opacity-60"></i>
+                                </button>
                             </div>
 
                             <!-- 景點簡單介紹區 -->
@@ -626,7 +617,7 @@
                             </div>
                         </div>
 
-                        <!-- 投票按鈕群組 -->
+                        <!-- 投票按鈕群組（支援再次點擊取消） -->
                         <div class="pt-2 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
                             <span class="text-xs font-medium text-slate-400">您的投票：</span>
                             <div class="flex space-x-2">
@@ -656,21 +647,19 @@
             const currentProj = projects.find(p => p.id === currentProjectId);
             const item = currentProj.items.find(i => i.id === itemId);
 
+            const hasAlreadyVoted = item.votes[type].includes(username);
+
+            // 先清掉該使用者在所有選項的投票
             item.votes.yes = item.votes.yes.filter(u => u !== username);
             item.votes.maybe = item.votes.maybe.filter(u => u !== username);
             item.votes.no = item.votes.no.filter(u => u !== username);
 
-            if (type === 'yes' && !item.votes.yes.includes(username)) {
-                item.votes.yes.push(username);
-            } else if (type === 'maybe' && !item.votes.maybe.includes(username)) {
-                item.votes.maybe.push(username);
-            } else if (type === 'no' && !item.votes.no.includes(username)) {
-                item.votes.no.push(username);
+            // 如果原本沒投過這個選項，就加上去；如果原本已經投過了（再點一次），就不加回去（達到取消效果）
+            if (!hasAlreadyVoted) {
+                item.votes[type].push(username);
             }
 
             saveDataToCloud();
-            renderSidebar();
-            renderItems();
         }
 
         function deleteItem(itemId) {
@@ -678,8 +667,6 @@
                 const currentProj = projects.find(p => p.id === currentProjectId);
                 currentProj.items = currentProj.items.filter(i => i.id !== itemId);
                 saveDataToCloud();
-                renderSidebar();
-                renderMainContent();
             }
         }
     </script>
