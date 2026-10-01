@@ -86,7 +86,7 @@
         <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 class="text-lg font-bold text-slate-900 flex items-center">
-                    <i class="fa-solid fa-route text-indigo-600 mr-2"></i> 完整行程規劃 (時間自動排序)
+                    <i class="fa-solid fa-route text-indigo-600 mr-2"></i> 完整行程規劃 (時間線編輯)
                 </h3>
                 <button onclick="closeItineraryModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
@@ -285,7 +285,7 @@
 
         function changeUsername() {
             document.getElementById('username-input').value = username;
-            document.getElementById('username-modal').classList.remove('hidden');
+            document.getElementById('username-modal').classList.add('hidden');
         }
 
         function renderSidebar() {
@@ -435,10 +435,10 @@
                 day.slots.push({
                     id: 'slot-' + Date.now(),
                     time: time,
-                    content: content
+                    content: content,
+                    notes: '' // 預設備註欄位（地址、營業時間等）
                 });
 
-                // 💡 自動依時間排序（支援 24 小時制如 07:55, 10:50, 也支援 08:00 穿插排序）
                 day.slots.sort((a, b) => a.time.localeCompare(b.time));
 
                 timeInput.value = '';
@@ -453,6 +453,22 @@
             const day = currentProj.itinerary.find(d => d.id === dayId);
             if (day) {
                 day.slots = day.slots.filter(s => s.id !== slotId);
+                saveDataToCloud();
+                renderItineraryModal();
+            }
+        }
+
+        // 編輯行程項目的備註（地址、營業時間等）
+        function editSlotNotes(dayId, slotId) {
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const day = currentProj.itinerary.find(d => d.id === dayId);
+            if (!day) return;
+            const slot = day.slots.find(s => s.id === slotId);
+            if (!slot) return;
+
+            const newNotes = prompt('請輸入此行程的備註（例如：地址、營業時間、門票資訊等）：', slot.notes || '');
+            if (newNotes !== null) {
+                slot.notes = newNotes.trim();
                 saveDataToCloud();
                 renderItineraryModal();
             }
@@ -480,13 +496,25 @@
                 let slotsHtml = '';
                 if (day.slots && day.slots.length > 0) {
                     day.slots.forEach(slot => {
+                        const hasNotes = slot.notes && slot.notes.trim() !== '';
                         slotsHtml += `
-                            <div class="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm text-xs">
-                                <div class="flex items-center space-x-3">
-                                    <span class="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">${slot.time}</span>
-                                    <span class="text-slate-700">${slot.content}</span>
+                            <div class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm text-xs space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <span class="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">${slot.time}</span>
+                                        <span class="text-slate-800 font-medium">${slot.content}</span>
+                                    </div>
+                                    <div class="flex items-center space-x-1">
+                                        <!-- 文件/備註按鈕 -->
+                                        <button onclick="editSlotNotes('${day.id}', '${slot.id}')" class="px-2.5 py-1 rounded-lg transition flex items-center ${hasNotes ? 'bg-indigo-600 text-white font-medium shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}" title="${hasNotes ? '檢視/修改備註' : '新增備註（地址、營業時間等）'}">
+                                            <i class="fa-solid fa-file-lines mr-1"></i> ${hasNotes ? '有備註' : '備註'}
+                                        </button>
+                                        <button onclick="deleteItinerarySlot('${day.id}', '${slot.id}')" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition" title="刪除">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                <button onclick="deleteItinerarySlot('${day.id}', '${slot.id}')" class="text-slate-400 hover:text-rose-600 p-1"><i class="fa-solid fa-xmark"></i></button>
+                                ${hasNotes ? `<div class="bg-slate-50 text-slate-600 p-2 rounded-lg border border-slate-200/60 mt-1 whitespace-pre-line"><i class="fa-solid fa-note-sticky text-indigo-500 mr-1.5"></i>${slot.notes}</div>` : ''}
                             </div>
                         `;
                     });
