@@ -81,24 +81,23 @@
         </main>
     </div>
 
-    <!-- 行程規劃 Modal (智能表單) -->
+    <!-- 行程規劃 Modal -->
     <div id="itinerary-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 class="text-lg font-bold text-slate-900 flex items-center">
-                    <i class="fa-solid fa-route text-indigo-600 mr-2"></i> 完整行程規劃 (時間線編輯)
+                    <i class="fa-solid fa-route text-indigo-600 mr-2"></i> 完整行程規劃 (時間自動排序)
                 </h3>
                 <button onclick="closeItineraryModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
             <div class="p-6 overflow-y-auto flex-1 space-y-6">
-                <!-- 智能新增天數表單 -->
+                <!-- 新增天數表單 -->
                 <div class="bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100">
                     <h4 class="font-bold text-indigo-900 text-sm mb-3 flex items-center">
                         <i class="fa-solid fa-calendar-plus mr-2"></i> 新增一天行程
                     </h4>
                     <form onsubmit="addItineraryDay(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                        <!-- 自動顯示 Day 標籤 -->
                         <div id="next-day-badge" class="sm:col-span-3 bg-indigo-600 text-white font-bold rounded-xl px-4 py-2.5 flex items-center justify-center text-sm shadow-sm">
                             Day 1
                         </div>
@@ -438,6 +437,10 @@
                     time: time,
                     content: content
                 });
+
+                // 💡 自動依時間排序（支援 24 小時制如 07:55, 10:50, 也支援 08:00 穿插排序）
+                day.slots.sort((a, b) => a.time.localeCompare(b.time));
+
                 timeInput.value = '';
                 contentInput.value = '';
                 saveDataToCloud();
@@ -505,7 +508,7 @@
                     </div>
 
                     <form onsubmit="addItinerarySlot(event, '${day.id}')" class="flex gap-2 pt-2 border-t border-slate-200/60">
-                        <input type="text" id="time-${day.id}" required placeholder="時間 (例如 10:30)" 
+                        <input type="text" id="time-${day.id}" required placeholder="時間 (例如 08:00)" 
                                class="w-28 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
                         <input type="text" id="content-${day.id}" required placeholder="地點或活動內容" 
                                class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
