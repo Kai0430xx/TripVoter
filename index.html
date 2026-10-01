@@ -34,8 +34,8 @@
             
             <div class="flex items-center space-x-3">
                 <!-- 手動同步按鈕 -->
-                <button onclick="manualSync()" class="bg-indigo-500 hover:bg-indigo-400 text-white text-xs px-3 py-1.5 rounded-xl font-medium transition shadow-sm flex items-center" title="強制同步雲端資料">
-                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i> 同步雲端
+                <button onclick="manualSync()" class="bg-indigo-500 hover:bg-indigo-400 text-white text-xs px-3 py-1.5 rounded-xl font-medium transition shadow-sm flex items-center" title="強制將當前畫面推送到雲端">
+                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i> 推送到雲端
                 </button>
                 <div class="hidden sm:flex items-center space-x-2 bg-indigo-700/60 px-3 py-1.5 rounded-full text-sm border border-indigo-500/40">
                     <i class="fa-solid fa-user-circle text-indigo-200"></i>
@@ -108,7 +108,7 @@
         </div>
     </div>
 
-    <!-- 新增專案 Modal -->
+    <!-- 新專案 Modal -->
     <div id="project-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div class="flex justify-between items-center mb-4">
@@ -158,27 +158,10 @@
         let username = localStorage.getItem('tripvoter_username') || '';
         let currentProjectId = localStorage.getItem('tripvoter_current_project') || '';
         let currentFilter = '全部';
-        let projects = JSON.parse(localStorage.getItem('tripvoter_projects')) || [];
+        let projects = [];
 
         function initFirestoreListener() {
-            // 先用本地資料秒開畫面，避免轉圈圈卡死
-            if (projects.length === 0) {
-                projects = [
-                    {
-                        id: 'jeju-2026',
-                        name: '2026 濟州島五天四夜',
-                        desc: '11/23 - 11/27 全程自駕遊規劃',
-                        items: [
-                            { id: '1', name: '城山日出峰', category: '景點', desc: '位於濟州島東邊的巨大火山岩，是看日出的絕佳勝景。', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', mapUrl: '', votes: { yes: ['王小明'], maybe: [], no: [] } }
-                        ]
-                    }
-                ];
-            }
-            if (!currentProjectId) currentProjectId = projects[0].id;
-            renderSidebar();
-            renderMainContent();
-
-            // 同步嘗試從雲端抓取最新資料
+            // 雲端即時監聽（雲端資料擁有絕對優先權）
             db.collection("tripvoter_data").doc("main").onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
@@ -191,16 +174,27 @@
                         renderMainContent();
                     }
                 } else {
+                    // 若雲端真的完全是空的，才寫入預設
+                    projects = [
+                        {
+                            id: 'jeju-2026',
+                            name: '2026 濟州島五天四夜',
+                            desc: '11/23 - 11/27 全程自駕遊規劃',
+                            items: [
+                                { id: '1', name: '城山日出峰', category: '景點', desc: '位於濟州島東邊的巨大火山岩，是看日出的絕佳勝景。', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', mapUrl: '', votes: { yes: ['王小明'], maybe: [], no: [] } }
+                            ]
+                        }
+                    ];
+                    currentProjectId = projects[0].id;
                     saveDataToCloud();
                 }
             }, (error) => {
-                console.log("雲端連線失敗，使用本地備用資料", error);
+                console.error("雲端連線失敗：", error);
+                alert("無法連線至雲端資料庫，請檢查網路連線。");
             });
         }
 
         function saveDataToCloud() {
-            localStorage.setItem('tripvoter_projects', JSON.stringify(projects));
-            localStorage.setItem('tripvoter_current_project', currentProjectId);
             db.collection("tripvoter_data").doc("main").set({
                 projects: projects
             }).then(() => {
@@ -211,8 +205,10 @@
         }
 
         function manualSync() {
-            saveDataToCloud();
-            alert("已強制同步至雲端！");
+            if (confirm("確定要將當前畫面的所有資料推送到雲端嗎？")) {
+                saveDataToCloud();
+                alert("已成功推送到雲端！");
+            }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -277,6 +273,7 @@
                 `;
                 listContainer.appendChild(btn);
             });
+            localStorage.setItem('tripvoter_current_project', currentProjectId);
         }
 
         function switchProject(id) {
