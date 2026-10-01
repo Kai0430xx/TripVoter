@@ -144,7 +144,7 @@
                 name: '2026 濟州島五天四夜',
                 desc: '11/23 - 11/27 全程自駕遊規劃',
                 items: [
-                    { id: '1', name: '城山日出峰', category: '景點', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', votes: { yes: ['王小明'], maybe: [], no: [] } }
+                    { id: '1', name: '城山日出峰', category: '景點', desc: '位於濟州島東邊的巨大火山岩，是看日出的絕佳勝景。', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', votes: { yes: ['王小明'], maybe: [], no: [] } }
                 ]
             }
         ];
@@ -301,8 +301,8 @@
                         <i class="fa-solid fa-circle-plus text-indigo-600 mr-2"></i> 新增景點或餐廳
                     </h3>
                     <form onsubmit="addItem(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3">
-                        <div class="md:col-span-7">
-                            <input type="text" id="item-name" required placeholder="輸入景點名稱（例如：城山日出峰、黑豬肉）" 
+                        <div class="md:col-span-4">
+                            <input type="text" id="item-name" required placeholder="名稱（例如：城山日出峰）" 
                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
                         </div>
                         <div class="md:col-span-3">
@@ -312,9 +312,13 @@
                                 <option value="購物">購物 / 伴手禮</option>
                             </select>
                         </div>
+                        <div class="md:col-span-3">
+                            <input type="text" id="item-desc" placeholder="簡單介紹（留空自動產生）" 
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                        </div>
                         <div class="md:col-span-2">
                             <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl transition text-sm shadow-sm flex items-center justify-center">
-                                <i class="fa-solid fa-plus mr-1.5"></i> 新增景點
+                                <i class="fa-solid fa-plus mr-1.5"></i> 新增項目
                             </button>
                         </div>
                     </form>
@@ -355,13 +359,19 @@
             e.preventDefault();
             const nameInput = document.getElementById('item-name');
             const categoryInput = document.getElementById('item-category');
+            const descInput = document.getElementById('item-desc');
 
             const name = nameInput.value.trim();
             const category = categoryInput.value;
+            let desc = descInput.value.trim();
 
             if (!name) return;
 
-            // 使用精選的 Unsplash 高畫質旅遊與美食圖庫作為智慧預設
+            // 如果沒有填寫介紹，自動產生預設簡短介紹
+            if (!desc) {
+                desc = `推薦造訪的${category}好去處，適合安排在行程中一同體驗。`;
+            }
+
             let imageUrl = getSmartTravelImage(category);
 
             const currentProj = projects.find(p => p.id === currentProjectId);
@@ -369,11 +379,13 @@
                 id: 'item-' + Date.now(),
                 name: name,
                 category: category,
+                desc: desc,
                 image: imageUrl,
                 votes: { yes: [], maybe: [], no: [] }
             });
 
             nameInput.value = '';
+            descInput.value = '';
             renderSidebar();
             renderMainContent();
         }
@@ -403,7 +415,7 @@
         }
 
         function editItemImage(itemId) {
-            const newUrl = prompt('請輸入這張景點/美食的真實圖片網址（例如從 Google 圖片複製圖片網址）：');
+            const newUrl = prompt('請輸入這張圖片的真實網址：');
             if (newUrl && newUrl.trim() !== '') {
                 const currentProj = projects.find(p => p.id === currentProjectId);
                 const item = currentProj.items.find(i => i.id === itemId);
@@ -411,6 +423,18 @@
                     item.image = newUrl.trim();
                     renderMainContent();
                 }
+            }
+        }
+
+        function editItemDesc(itemId) {
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const item = currentProj.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            const newDesc = prompt('請修改此項目的簡短介紹：', item.desc || '');
+            if (newDesc !== null) {
+                item.desc = newDesc.trim();
+                renderMainContent();
             }
         }
 
@@ -448,17 +472,18 @@
                 const hasNo = item.votes.no.includes(username);
 
                 const card = document.createElement('div');
+                // 採用一致的固定高度架構 (h-56 或類似的 flex 齊平設計)
                 card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row items-stretch transition hover:shadow-md';
                 card.innerHTML = `
-                    <!-- 景點真實照片 -->
-                    <div class="md:w-72 h-48 md:h-auto relative bg-slate-100 flex-shrink-0">
+                    <!-- 左側固定高度圖片區 (h-52 md:h-auto 確保左右等高) -->
+                    <div class="md:w-72 h-52 md:h-auto relative bg-slate-100 flex-shrink-0">
                         <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'">
                         <span class="absolute top-3 left-3 bg-slate-900/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg">
                             ${item.category}
                         </span>
                         
                         <!-- 功能按鈕群 -->
-                        <div class="absolute bottom-3 left-3 flex space-x-2">
+                        <div class="absolute bottom-3 left-3 flex space-x-1.5">
                             <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}" target="_blank" class="bg-white/90 hover:bg-white text-slate-700 text-xs font-medium px-2.5 py-1 rounded-lg shadow transition flex items-center">
                                 <i class="fa-solid fa-map-marked-alt text-indigo-600 mr-1"></i> 地圖
                             </a>
@@ -472,19 +497,29 @@
                         </button>
                     </div>
 
-                    <!-- 景點資訊與投票區 -->
-                    <div class="p-5 flex-1 flex flex-col justify-between">
+                    <!-- 右側內容與投票區 (上下空間平均分配，確保卡片高度絕對一致) -->
+                    <div class="p-5 flex-1 flex flex-col justify-between min-h-[14rem]">
                         <div>
-                            <h4 class="text-xl font-bold text-slate-900 mb-2">${item.name}</h4>
-                            <div class="flex flex-wrap gap-2 text-xs text-slate-500 mb-4">
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="text-xl font-bold text-slate-900">${item.name}</h4>
+                            </div>
+                            <div class="flex flex-wrap gap-2 text-xs text-slate-500 mb-2">
                                 <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium">👍 必去 (${yesCount})：${item.votes.yes.join(', ') || '無'}</span>
                                 <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-medium">🤔 考慮 (${maybeCount})：${item.votes.maybe.join(', ') || '無'}</span>
                                 <span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-medium">👎 不去 (${noCount})：${item.votes.no.join(', ') || '無'}</span>
                             </div>
+
+                            <!-- 紅框處：景點簡單介紹區 -->
+                            <div class="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-xs text-slate-600 flex justify-between items-center group">
+                                <p class="line-clamp-2"><i class="fa-solid fa-circle-info text-indigo-500 mr-1.5"></i>${item.desc || '尚無簡介說明...'}</p>
+                                <button onclick="editItemDesc('${item.id}')" class="text-slate-400 hover:text-indigo-600 p-1 opacity-60 group-hover:opacity-100 transition flex-shrink-0 ml-2" title="編輯介紹">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- 投票按鈕群組 -->
-                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2 mt-3">
                             <span class="text-xs font-medium text-slate-400">您的投票：</span>
                             <div class="flex space-x-2">
                                 <button onclick="vote('${item.id}', 'yes')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasYes ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}">
@@ -493,7 +528,7 @@
                                 <button onclick="vote('${item.id}', 'maybe')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasMaybe ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-700'}">
                                     <i class="fa-solid fa-circle-question mr-1.5"></i> 考慮
                                 </button>
-                                <button onclick="vote('${item.id}', 'no')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasNo ? 'bg-rose-600 text-white shadow-md shadow-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700'}">
+                                <button onclick="vote('${item.id}', 'no')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasNo ? 'bg-rose-600 text-white shadow-md shadow-rose-200' : 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700'}">
                                     <i class="fa-solid fa-thumbs-down mr-1.5"></i> 不去
                                 </button>
                             </div>
