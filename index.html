@@ -81,6 +81,94 @@
         </main>
     </div>
 
+    <!-- 行程規劃 Modal -->
+    <div id="itinerary-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                    <i class="fa-solid fa-calendar-days text-indigo-600 mr-2"></i> 5天4夜完整行程規劃 (時間線)
+                </h3>
+                <button onclick="closeItineraryModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 space-y-6">
+                
+                <!-- 航班與住宿摘要 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100 text-sm">
+                    <div>
+                        <span class="font-bold text-indigo-900 block mb-1"><i class="fa-solid fa-plane mr-1.5"></i> 航班資訊</span>
+                        <p class="text-slate-600 text-xs">去程：11/23 07:55 桃園起飛 ➔ 10:50 抵達濟州</p>
+                        <p class="text-slate-600 text-xs mt-0.5">回程：11/27 11:45 濟州起飛 ➔ 12:55 抵達桃園</p>
+                    </div>
+                    <div>
+                        <span class="font-bold text-indigo-900 block mb-1"><i class="fa-solid fa-hotel mr-1.5"></i> 住宿安排</span>
+                        <p class="text-slate-600 text-xs">11/23 - 11/25（前兩晚）：南部/東南部飯店</p>
+                        <p class="text-slate-600 text-xs mt-0.5">11/25 - 11/27（後兩晚）：市區/其他飯店</p>
+                    </div>
+                </div>
+
+                <!-- 時間線內容 -->
+                <div class="relative border-l-2 border-indigo-200 ml-4 space-y-8 py-2">
+                    
+                    <!-- Day 1 -->
+                    <div class="relative pl-6">
+                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white shadow"></div>
+                        <h4 class="font-bold text-indigo-900 text-base mb-1">Day 1 (11/23) 抵達濟州與東部探索</h4>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 space-y-1">
+                            <p>⏳ 07:55 桃園機場起飛</p>
+                            <p>⏳ 10:50 抵達濟州機場、辦理租車自駕</p>
+                            <p>📌 <b>待填入景點/餐廳</b>（可從下方投票區選出後填入此處）</p>
+                        </div>
+                    </div>
+
+                    <!-- Day 2 -->
+                    <div class="relative pl-6">
+                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white shadow"></div>
+                        <h4 class="font-bold text-indigo-900 text-base mb-1">Day 2 (11/24) 南部與東南部風光</h4>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 space-y-1">
+                            <p>⏳ 全天自駕行程</p>
+                            <p>📌 <b>待填入景點/餐廳</b></p>
+                        </div>
+                    </div>
+
+                    <!-- Day 3 -->
+                    <div class="relative pl-6">
+                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white shadow"></div>
+                        <h4 class="font-bold text-indigo-900 text-base mb-1">Day 3 (11/25) 轉移住宿與中部探索</h4>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 space-y-1">
+                            <p>⏳ 飯店退房與更換住宿</p>
+                            <p>📌 <b>待填入景點/餐廳</b></p>
+                        </div>
+                    </div>
+
+                    <!-- Day 4 -->
+                    <div class="relative pl-6">
+                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white shadow"></div>
+                        <h4 class="font-bold text-indigo-900 text-base mb-1">Day 4 (11/26) 市區購物與美食巡禮</h4>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 space-y-1">
+                            <p>⏳ 伴手禮採買與人氣美食</p>
+                            <p>📌 <b>待填入景點/餐廳</b></p>
+                        </div>
+                    </div>
+
+                    <!-- Day 5 -->
+                    <div class="relative pl-6">
+                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white shadow"></div>
+                        <h4 class="font-bold text-indigo-900 text-base mb-1">Day 5 (11/27) 賦歸賦歸</h4>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 space-y-1">
+                            <p>⏳ 還車與前往機場</p>
+                            <p>⏳ 11:45 濟州機場起飛 ➔ 12:55 抵達桃園</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button onclick="closeItineraryModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-sm font-medium transition shadow-sm">關閉</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 訪客輸入名字 Modal -->
     <div id="username-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
@@ -172,8 +260,9 @@
                     projects = [
                         {
                             id: 'proj-' + Date.now(),
-                            name: '我的旅遊專案',
-                            desc: '點擊下方建立新專案或新增景點',
+                            name: '2026 濟州島五天四夜',
+                            desc: '11/23 - 11/27 全程自駕遊規劃',
+                            isFinished: false,
                             items: []
                         }
                     ];
@@ -241,13 +330,17 @@
 
             projects.forEach(proj => {
                 const isActive = proj.id === currentProjectId;
+                const isFin = proj.isFinished;
                 const btn = document.createElement('div');
                 btn.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition ${isActive ? 'bg-indigo-50 text-indigo-700 font-semibold shadow-sm border border-indigo-100' : 'hover:bg-slate-100 text-slate-600'}`;
                 btn.innerHTML = `
                     <div class="flex items-center space-x-3 overflow-hidden" onclick="switchProject('${proj.id}')">
                         <i class="fa-solid fa-map-location-dot ${isActive ? 'text-indigo-600' : 'text-slate-400'}"></i>
                         <div class="truncate">
-                            <div class="text-sm truncate">${proj.name}</div>
+                            <div class="text-sm truncate flex items-center">
+                                ${proj.name}
+                                ${isFin ? '<span class="ml-2 bg-emerald-100 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded font-bold">已結案</span>' : ''}
+                            </div>
                             <div class="text-xs text-slate-400 font-normal truncate">${proj.desc || '尚無描述'}</div>
                         </div>
                     </div>
@@ -289,6 +382,7 @@
                 id: newId,
                 name: name,
                 desc: desc,
+                isFinished: false,
                 items: []
             });
             currentProjectId = newId;
@@ -307,6 +401,26 @@
             }
         }
 
+        // 切換結案狀態
+        function toggleFinishProject() {
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            if (!currentProj) return;
+
+            currentProj.isFinished = !currentProj.isFinished;
+            saveDataToCloud();
+            renderSidebar();
+            renderMainContent();
+        }
+
+        // 開啟行程規劃 Modal
+        function openItineraryModal() {
+            document.getElementById('itinerary-modal').classList.remove('hidden');
+        }
+
+        function closeItineraryModal() {
+            document.getElementById('itinerary-modal').classList.add('hidden');
+        }
+
         function renderMainContent() {
             const container = document.getElementById('main-content');
             const currentProj = projects.find(p => p.id === currentProjectId);
@@ -316,18 +430,34 @@
                 return;
             }
 
+            const isFin = currentProj.isFinished || false;
             const totalCount = currentProj.items.length;
             const attractionCount = currentProj.items.filter(i => i.category === '景點').length;
             const foodCount = currentProj.items.filter(i => i.category === '美食').length;
             const shopCount = currentProj.items.filter(i => i.category === '購物').length;
 
             container.innerHTML = `
-                <!-- 專案標題列 -->
+                <!-- 專案標題列 (含新增的兩個按鈕) -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                        <div class="inline-block bg-indigo-50 text-indigo-600 text-xs font-bold px-2.5 py-1 rounded-full mb-2">目前專案</div>
+                        <div class="flex items-center space-x-2 mb-2">
+                            <span class="inline-block bg-indigo-50 text-indigo-600 text-xs font-bold px-2.5 py-1 rounded-full">目前專案</span>
+                            ${isFin ? '<span class="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center shadow-sm"><i class="fa-solid fa-check-circle mr-1"></i> 已結案</span>' : '<span class="bg-slate-100 text-slate-500 text-xs font-bold px-2.5 py-1 rounded-full">進行中</span>'}
+                        </div>
                         <h2 class="text-2xl font-bold text-slate-900">${currentProj.name}</h2>
                         <p class="text-slate-500 text-sm mt-1">${currentProj.desc || '大家一起來投票決定想去的景點與餐廳吧！'}</p>
+                    </div>
+
+                    <!-- 右側按鈕區 (紅框指定位置) -->
+                    <div class="flex items-center space-x-2.5 flex-wrap gap-2">
+                        <!-- 是否結案按鈕 -->
+                        <button onclick="toggleFinishProject()" class="px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center shadow-sm ${isFin ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'}">
+                            <i class="fa-solid ${isFin ? 'fa-box-archive' : 'fa-circle-check'} mr-1.5"></i> ${isFin ? '已結案 (點擊取消)' : '是否結案'}
+                        </button>
+                        <!-- 行程規劃按鈕 -->
+                        <button onclick="openItineraryModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center shadow-md shadow-indigo-200">
+                            <i class="fa-solid fa-route mr-1.5"></i> 行程規劃
+                        </button>
                     </div>
                 </div>
 
@@ -549,7 +679,6 @@
                 const maybeCount = item.votes.maybe.length;
                 const noCount = item.votes.no.length;
 
-                // 根據是否有票數來決定動態底色與文字粗細
                 const yesClass = yesCount > 0 
                     ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 font-bold' 
                     : 'bg-emerald-50 text-emerald-700 font-medium hover:bg-emerald-100';
