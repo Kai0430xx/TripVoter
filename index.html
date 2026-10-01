@@ -65,7 +65,7 @@
                 <!-- 動態生成專案 -->
             </div>
 
-            <!-- 新專案按鈕 -->
+            <!-- 新增專案按鈕 -->
             <div class="p-3 border-t border-slate-100 bg-slate-50">
                 <button onclick="openNewProjectModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl transition flex items-center justify-center shadow-sm text-sm">
                     <i class="fa-solid fa-plus mr-2"></i> 建立新旅遊專案
@@ -480,8 +480,8 @@
                 const card = document.createElement('div');
                 card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row items-stretch transition hover:shadow-md';
                 card.innerHTML = `
-                    <!-- 左側固定高度圖片區（強制統一寬高、等比裁切不變形） -->
-                    <div class="md:w-72 h-52 md:h-auto relative bg-slate-100 flex-shrink-0 overflow-hidden">
+                    <!-- 左側固定高度圖片區（強制統一尺寸：w-72、h-52，不管照片比例如何一律完美裁切填滿） -->
+                    <div class="md:w-72 h-52 flex-shrink-0 relative bg-slate-100 overflow-hidden">
                         <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'">
                         <span class="absolute top-3 left-3 bg-slate-900/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg z-10">
                             ${item.category}
@@ -502,11 +502,11 @@
                         </button>
                     </div>
 
-                    <!-- 右側內容與投票區 -->
-                    <div class="p-5 flex-1 flex flex-col justify-between min-h-[14rem]">
+                    <!-- 右側內容與投票區（鎖定固定高度與內部均分） -->
+                    <div class="p-5 flex-1 flex flex-col justify-between h-52">
                         <div>
                             <div class="flex justify-between items-start mb-1">
-                                <h4 class="text-xl font-bold text-slate-900">${item.name}</h4>
+                                <h4 class="text-xl font-bold text-slate-900 truncate">${item.name}</h4>
                             </div>
                             <div class="flex flex-wrap gap-2 text-xs text-slate-500 mb-2">
                                 <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium">👍 必去 (${yesCount})：${item.votes.yes.join(', ') || '無'}</span>
@@ -515,8 +515,8 @@
                             </div>
 
                             <!-- 景點簡單介紹區 -->
-                            <div class="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-xs text-slate-600 flex justify-between items-center group">
-                                <p class="line-clamp-2"><i class="fa-solid fa-circle-info text-indigo-500 mr-1.5"></i>${item.desc || '尚無簡介說明...'}</p>
+                            <div class="bg-slate-50 border border-slate-100 rounded-xl px-3 py-1.5 text-xs text-slate-600 flex justify-between items-center group">
+                                <p class="truncate"><i class="fa-solid fa-circle-info text-indigo-500 mr-1.5"></i>${item.desc || '尚無簡介說明...'}</p>
                                 <button onclick="editItemDesc('${item.id}')" class="text-slate-400 hover:text-indigo-600 p-1 opacity-60 group-hover:opacity-100 transition flex-shrink-0 ml-2" title="編輯介紹">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </button>
@@ -524,7 +524,7 @@
                         </div>
 
                         <!-- 投票按鈕群組 -->
-                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2 mt-3">
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
                             <span class="text-xs font-medium text-slate-400">您的投票：</span>
                             <div class="flex space-x-2">
                                 <button onclick="vote('${item.id}', 'yes')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasYes ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}">
@@ -533,7 +533,7 @@
                                 <button onclick="vote('${item.id}', 'maybe')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasMaybe ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-700'}">
                                     <i class="fa-solid fa-circle-question mr-1.5"></i> 考慮
                                 </button>
-                                <button onclick="vote('${item.id}', 'no')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasNo ? 'bg-rose-600 text-white shadow-md shadow-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700'}">
+                                <button onclick="vote('${item.id}', 'no')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasNo ? 'bg-rose-600 text-white shadow-md shadow-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-rose-700'}">
                                     <i class="fa-solid fa-thumbs-down mr-1.5"></i> 不去
                                 </button>
                             </div>
