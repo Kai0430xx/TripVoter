@@ -384,7 +384,7 @@
                 category: category,
                 desc: desc,
                 image: imageUrl,
-                mapUrl: '', // 預設空，會自動導向 Google 搜尋
+                mapUrl: '',
                 votes: { yes: [], maybe: [], no: [] }
             });
 
@@ -459,6 +459,15 @@
             }
         }
 
+        // 點擊介紹文字直接彈窗檢視完整內容
+        function showFullDesc(itemId) {
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const item = currentProj.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            alert(`【${item.name} 介紹】\n\n${item.desc || '尚無簡介說明...'}`);
+        }
+
         function editItemMap(itemId) {
             const currentProj = projects.find(p => p.id === currentProjectId);
             const item = currentProj.items.find(i => i.id === itemId);
@@ -505,7 +514,6 @@
                 const hasMaybe = item.votes.maybe.includes(username);
                 const hasNo = item.votes.no.includes(username);
 
-                // 如果有自訂地圖連結就用自訂的，沒有則自動用名稱連去 Google 搜尋
                 const finalMapUrl = item.mapUrl ? item.mapUrl : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
 
                 const card = document.createElement('div');
@@ -553,10 +561,10 @@
                                 <span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-medium">👎 不去 (${noCount})：${item.votes.no.join(', ') || '無'}</span>
                             </div>
 
-                            <!-- 景點簡單介紹區 -->
-                            <div class="bg-slate-50 border border-slate-100 rounded-xl px-3 py-1.5 text-xs text-slate-600 flex justify-between items-center group">
-                                <p class="truncate"><i class="fa-solid fa-circle-info text-indigo-500 mr-1.5"></i>${item.desc || '尚無簡介說明...'}</p>
-                                <button onclick="editItemDesc('${item.id}')" class="text-slate-400 hover:text-indigo-600 p-1 opacity-60 group-hover:opacity-100 transition flex-shrink-0 ml-2" title="編輯介紹">
+                            <!-- 景點簡單介紹區（超出兩行自動變 ...，點擊可直接看完整內容） -->
+                            <div class="bg-slate-50 border border-slate-100 rounded-xl px-3 py-1.5 text-xs text-slate-600 flex justify-between items-center group cursor-pointer hover:bg-slate-100 transition" onclick="showFullDesc('${item.id}')" title="點擊檢視完整介紹">
+                                <p class="line-clamp-1 flex-1"><i class="fa-solid fa-circle-info text-indigo-500 mr-1.5"></i>${item.desc || '尚無簡介說明...'}</p>
+                                <button onclick="event.stopPropagation(); editItemDesc('${item.id}')" class="text-slate-400 hover:text-indigo-600 p-1 opacity-60 group-hover:opacity-100 transition flex-shrink-0 ml-2" title="編輯介紹">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </button>
                             </div>
