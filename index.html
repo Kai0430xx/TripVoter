@@ -81,7 +81,7 @@
         </main>
     </div>
 
-    <!-- 行程規劃 Modal (動態編輯時間線) -->
+    <!-- 行程規劃 Modal (智能表單) -->
     <div id="itinerary-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
@@ -92,17 +92,29 @@
             </div>
 
             <div class="p-6 overflow-y-auto flex-1 space-y-6">
-                <!-- 新增天數表單 -->
+                <!-- 智能新增天數表單 -->
                 <div class="bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100">
                     <h4 class="font-bold text-indigo-900 text-sm mb-3 flex items-center">
                         <i class="fa-solid fa-calendar-plus mr-2"></i> 新增一天行程
                     </h4>
-                    <form onsubmit="addItineraryDay(event)" class="flex gap-2">
-                        <input type="text" id="day-title-input" required placeholder="例如：Day 1 (11/23 抵達與東部)" 
-                               class="flex-1 px-4 py-2 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white">
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2 rounded-xl transition text-sm shadow-sm flex items-center">
-                            <i class="fa-solid fa-plus mr-1"></i> 新增天數
-                        </button>
+                    <form onsubmit="addItineraryDay(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                        <!-- 自動顯示 Day 標籤 -->
+                        <div id="next-day-badge" class="sm:col-span-3 bg-indigo-600 text-white font-bold rounded-xl px-4 py-2.5 flex items-center justify-center text-sm shadow-sm">
+                            Day 1
+                        </div>
+                        <div class="sm:col-span-4">
+                            <input type="text" id="day-date-input" placeholder="日期（例如：11/23）" 
+                                   class="w-full px-4 py-2.5 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <input type="text" id="day-memo-input" placeholder="備註/主題（例如：東部探索）" 
+                                   class="w-full px-4 py-2.5 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-3 rounded-xl transition text-sm shadow-sm flex items-center justify-center">
+                                <i class="fa-solid fa-plus mr-1"></i> 新增
+                            </button>
+                        </div>
                     </form>
                 </div>
 
@@ -377,12 +389,16 @@
 
         function addItineraryDay(e) {
             e.preventDefault();
-            const input = document.getElementById('day-title-input');
-            const title = input.value.trim();
-            if (!title) return;
-
             const currentProj = projects.find(p => p.id === currentProjectId);
             if (!currentProj.itinerary) currentProj.itinerary = [];
+
+            const dayNum = currentProj.itinerary.length + 1;
+            const dateVal = document.getElementById('day-date-input').value.trim();
+            const memoVal = document.getElementById('day-memo-input').value.trim();
+
+            let title = `Day ${dayNum}`;
+            if (dateVal) title += ` (${dateVal})`;
+            if (memoVal) title += ` - ${memoVal}`;
 
             currentProj.itinerary.push({
                 id: 'day-' + Date.now(),
@@ -390,7 +406,8 @@
                 slots: []
             });
 
-            input.value = '';
+            document.getElementById('day-date-input').value = '';
+            document.getElementById('day-memo-input').value = '';
             saveDataToCloud();
             renderItineraryModal();
         }
@@ -440,8 +457,12 @@
 
         function renderItineraryModal() {
             const container = document.getElementById('itinerary-days-container');
+            const badge = document.getElementById('next-day-badge');
             const currentProj = projects.find(p => p.id === currentProjectId);
             if (!currentProj) return;
+
+            const nextDayNum = (currentProj.itinerary ? currentProj.itinerary.length : 0) + 1;
+            if (badge) badge.textContent = `Day ${nextDayNum}`;
 
             if (!currentProj.itinerary || currentProj.itinerary.length === 0) {
                 container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">目前還沒有新增任何天數，請從上方新增。</div>`;
