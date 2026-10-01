@@ -32,10 +32,14 @@
                 </div>
             </div>
             
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3">
+                <!-- 手動同步按鈕 -->
+                <button onclick="manualSync()" class="bg-indigo-500 hover:bg-indigo-400 text-white text-xs px-3 py-1.5 rounded-xl font-medium transition shadow-sm flex items-center" title="強制同步雲端資料">
+                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i> 同步雲端
+                </button>
                 <div class="hidden sm:flex items-center space-x-2 bg-indigo-700/60 px-3 py-1.5 rounded-full text-sm border border-indigo-500/40">
                     <i class="fa-solid fa-user-circle text-indigo-200"></i>
-                    <span class="text-indigo-100">參與身分：</span>
+                    <span class="text-indigo-100">身分：</span>
                     <span id="current-username-display" class="font-semibold text-white">載入中...</span>
                     <button onclick="changeUsername()" class="text-xs bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-0.5 rounded transition ml-1">修改</button>
                 </div>
@@ -132,41 +136,90 @@
         </div>
     </div>
 
-    <!-- JavaScript 邏輯 -->
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- JavaScript 邏輯與雲端同步 -->
     <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAXDNGSijHTnGaXppDs0k_69pAtqWEmFxA",
+            authDomain: "tripvoter.firebaseapp.com",
+            projectId: "tripvoter",
+            storageBucket: "tripvoter.firebasestorage.app",
+            messagingSenderId: "151661879411",
+            appId: "1:151661879411:web:ac6c488961d9a2bb734a06",
+            measurementId: "G-VKV9TFWSHF"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         let username = localStorage.getItem('tripvoter_username') || '';
         let currentProjectId = localStorage.getItem('tripvoter_current_project') || '';
         let currentFilter = '全部';
+        let projects = JSON.parse(localStorage.getItem('tripvoter_projects')) || [];
 
-        let projects = JSON.parse(localStorage.getItem('tripvoter_projects')) || [
-            {
-                id: 'jeju-2026',
-                name: '2026 濟州島五天四夜',
-                desc: '11/23 - 11/27 全程自駕遊規劃',
-                items: [
-                    { id: '1', name: '城山日出峰', category: '景點', desc: '位於濟州島東邊的巨大火山岩，是看日出的絕佳勝景。', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', mapUrl: '', votes: { yes: ['王小明'], maybe: [], no: [] } }
-                ]
-            }
-        ];
+        function initFirestoreListener() {
+            db.collection("tripvoter_data").doc("main").onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.projects && data.projects.length > 0) {
+                        projects = data.projects;
+                        if (!currentProjectId || !projects.find(p => p.id === currentProjectId)) {
+                            currentProjectId = projects[0].id;
+                        }
+                        renderSidebar();
+                        renderMainContent();
+                    }
+                } else {
+                    // 如果雲端是空的，把本地現有的資料上傳上去
+                    if (projects.length === 0) {
+                        projects = [
+                            {
+                                id: 'jeju-2026',
+                                name: '2026 濟州島五天四夜',
+                                desc: '11/23 - 11/27 全程自駕遊規劃',
+                                items: [
+                                    { id: '1', name: '城山日出峰', category: '景點', desc: '位於濟州島東邊的巨大火山岩，是看日出的絕佳勝景。', image: 'https://images.unsplash.com/photo-1538485399081-03af137b0b97?auto=format&fit=crop&w=800&q=80', mapUrl: '', votes: { yes: ['王小明'], maybe: [], no: [] } }
+                                ]
+                            }
+                        ];
+                        currentProjectId = projects[0].id;
+                    }
+                    saveDataToCloud();
+                }
+            }, (error) => {
+                console.error("雲端監聽錯誤：", error);
+            });
+        }
 
-        if (!currentProjectId && projects.length > 0) {
-            currentProjectId = projects[0].id;
+        function saveDataToCloud() {
+            localStorage.setItem('tripvoter_projects', JSON.stringify(projects));
+            localStorage.setItem('tripvoter_current_project', currentProjectId);
+            db.collection("tripvoter_data").doc("main").set({
+                projects: projects
+            }).then(() => {
+                console.log("資料已成功同步至雲端！");
+            }).catch((error) => {
+                console.error("雲端儲存失敗: ", error);
+            });
+        }
+
+        // 手動同步按鈕
+        function manualSync() {
+            saveDataToCloud();
+            alert("已強制同步至雲端！請通知朋友重新整理網頁。");
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             checkUsername();
-            renderSidebar();
-            renderMainContent();
+            initFirestoreListener();
 
             document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
             document.getElementById('sidebar-close').addEventListener('click', toggleSidebar);
             document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);
         });
-
-        function saveData() {
-            localStorage.setItem('tripvoter_projects', JSON.stringify(projects));
-            localStorage.setItem('tripvoter_current_project', currentProjectId);
-        }
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -221,7 +274,6 @@
                 `;
                 listContainer.appendChild(btn);
             });
-            saveData();
         }
 
         function switchProject(id) {
@@ -259,6 +311,7 @@
             });
             currentProjectId = newId;
             closeNewProjectModal();
+            saveDataToCloud();
             renderSidebar();
             renderMainContent();
         }
@@ -270,6 +323,7 @@
                 if (currentProjectId === id && projects.length > 0) {
                     currentProjectId = projects[0].id;
                 }
+                saveDataToCloud();
                 renderSidebar();
                 renderMainContent();
             }
@@ -390,7 +444,7 @@
 
             nameInput.value = '';
             descInput.value = '';
-            saveData();
+            saveDataToCloud();
             renderSidebar();
             renderMainContent();
         }
@@ -427,7 +481,7 @@
             const newName = prompt('請修改項目名稱：', item.name);
             if (newName && newName.trim() !== '') {
                 item.name = newName.trim();
-                saveData();
+                saveDataToCloud();
                 renderSidebar();
                 renderMainContent();
             }
@@ -440,7 +494,7 @@
                 const item = currentProj.items.find(i => i.id === itemId);
                 if (item) {
                     item.image = newUrl.trim();
-                    saveData();
+                    saveDataToCloud();
                     renderMainContent();
                 }
             }
@@ -454,12 +508,11 @@
             const newDesc = prompt('請修改此項目的簡短介紹：', item.desc || '');
             if (newDesc !== null) {
                 item.desc = newDesc.trim();
-                saveData();
+                saveDataToCloud();
                 renderMainContent();
             }
         }
 
-        // 點擊介紹文字直接彈窗檢視完整內容
         function showFullDesc(itemId) {
             const currentProj = projects.find(p => p.id === currentProjectId);
             const item = currentProj.items.find(i => i.id === itemId);
@@ -476,7 +529,7 @@
             const newMapUrl = prompt('請貼上正確的 Google 地圖網址（留空則使用自動名稱搜尋）：', item.mapUrl || '');
             if (newMapUrl !== null) {
                 item.mapUrl = newMapUrl.trim();
-                saveData();
+                saveDataToCloud();
                 renderMainContent();
             }
         }
@@ -561,7 +614,7 @@
                                 <span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-medium">👎 不去 (${noCount})：${item.votes.no.join(', ') || '無'}</span>
                             </div>
 
-                            <!-- 景點簡單介紹區（超出兩行自動變 ...，點擊可直接看完整內容） -->
+                            <!-- 景點簡單介紹區 -->
                             <div class="bg-slate-50 border border-slate-100 rounded-xl px-3 py-1.5 text-xs text-slate-600 flex justify-between items-center group cursor-pointer hover:bg-slate-100 transition" onclick="showFullDesc('${item.id}')" title="點擊檢視完整介紹">
                                 <p class="line-clamp-1 flex-1"><i class="fa-solid fa-circle-info text-indigo-500 mr-1.5"></i>${item.desc || '尚無簡介說明...'}</p>
                                 <button onclick="event.stopPropagation(); editItemDesc('${item.id}')" class="text-slate-400 hover:text-indigo-600 p-1 opacity-60 group-hover:opacity-100 transition flex-shrink-0 ml-2" title="編輯介紹">
@@ -580,7 +633,7 @@
                                 <button onclick="vote('${item.id}', 'maybe')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasMaybe ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-700'}">
                                     <i class="fa-solid fa-circle-question mr-1.5"></i> 考慮
                                 </button>
-                                <button onclick="vote('${item.id}', 'no')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasNo ? 'bg-rose-600 text-white shadow-md shadow-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700'}">
+                                <button onclick="vote('${item.id}', 'no')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center ${hasNo ? 'bg-rose-600 text-white shadow-md shadow-amber-200' : 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700'}">
                                     <i class="fa-solid fa-thumbs-down mr-1.5"></i> 不去
                                 </button>
                             </div>
@@ -612,7 +665,7 @@
                 item.votes.no.push(username);
             }
 
-            saveData();
+            saveDataToCloud();
             renderSidebar();
             renderItems();
         }
@@ -621,7 +674,7 @@
             if (confirm('確定要從清單移除這個景點嗎？')) {
                 const currentProj = projects.find(p => p.id === currentProjectId);
                 currentProj.items = currentProj.items.filter(i => i.id !== itemId);
-                saveData();
+                saveDataToCloud();
                 renderSidebar();
                 renderMainContent();
             }
