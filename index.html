@@ -81,90 +81,39 @@
         </main>
     </div>
 
-    <!-- 行程規劃 Modal -->
+    <!-- 行程規劃 Modal (動態編輯時間線) -->
     <div id="itinerary-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 class="text-lg font-bold text-slate-900 flex items-center">
-                    <i class="fa-solid fa-calendar-days text-indigo-600 mr-2"></i> 5天4夜完整行程規劃 (時間線)
+                    <i class="fa-solid fa-route text-indigo-600 mr-2"></i> 完整行程規劃 (時間線編輯)
                 </h3>
                 <button onclick="closeItineraryModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
+
             <div class="p-6 overflow-y-auto flex-1 space-y-6">
-                
-                <!-- 航班與住宿摘要 -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100 text-sm">
-                    <div>
-                        <span class="font-bold text-indigo-900 block mb-1"><i class="fa-solid fa-plane mr-1.5"></i> 航班資訊</span>
-                        <p class="text-slate-600 text-xs">去程：11/23 07:55 桃園起飛 ➔ 10:50 抵達濟州</p>
-                        <p class="text-slate-600 text-xs mt-0.5">回程：11/27 11:45 濟州起飛 ➔ 12:55 抵達桃園</p>
-                    </div>
-                    <div>
-                        <span class="font-bold text-indigo-900 block mb-1"><i class="fa-solid fa-hotel mr-1.5"></i> 住宿安排</span>
-                        <p class="text-slate-600 text-xs">11/23 - 11/25（前兩晚）：南部/東南部飯店</p>
-                        <p class="text-slate-600 text-xs mt-0.5">11/25 - 11/27（後兩晚）：市區/其他飯店</p>
-                    </div>
+                <!-- 新增天數表單 -->
+                <div class="bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100">
+                    <h4 class="font-bold text-indigo-900 text-sm mb-3 flex items-center">
+                        <i class="fa-solid fa-calendar-plus mr-2"></i> 新增一天行程
+                    </h4>
+                    <form onsubmit="addItineraryDay(event)" class="flex gap-2">
+                        <input type="text" id="day-title-input" required placeholder="例如：Day 1 (11/23 抵達與東部)" 
+                               class="flex-1 px-4 py-2 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2 rounded-xl transition text-sm shadow-sm flex items-center">
+                            <i class="fa-solid fa-plus mr-1"></i> 新增天數
+                        </button>
+                    </form>
                 </div>
 
-                <!-- 時間線內容 -->
-                <div class="relative border-l-2 border-indigo-200 ml-4 space-y-8 py-2">
-                    
-                    <!-- Day 1 -->
-                    <div class="relative pl-6">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white shadow"></div>
-                        <h4 class="font-bold text-indigo-900 text-base mb-1">Day 1 (11/23) 抵達濟州與東部探索</h4>
-                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 space-y-1">
-                            <p>⏳ 07:55 桃園機場起飛</p>
-                            <p>⏳ 10:50 抵達濟州機場、辦理租車自駕</p>
-                            <p>📌 <b>待填入景點/餐廳</b>（可從下方投票區選出後填入此處）</p>
-                        </div>
-                    </div>
-
-                    <!-- Day 2 -->
-                    <div class="relative pl-6">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white shadow"></div>
-                        <h4 class="font-bold text-indigo-900 text-base mb-1">Day 2 (11/24) 南部與東南部風光</h4>
-                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 space-y-1">
-                            <p>⏳ 全天自駕行程</p>
-                            <p>📌 <b>待填入景點/餐廳</b></p>
-                        </div>
-                    </div>
-
-                    <!-- Day 3 -->
-                    <div class="relative pl-6">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white shadow"></div>
-                        <h4 class="font-bold text-indigo-900 text-base mb-1">Day 3 (11/25) 轉移住宿與中部探索</h4>
-                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 space-y-1">
-                            <p>⏳ 飯店退房與更換住宿</p>
-                            <p>📌 <b>待填入景點/餐廳</b></p>
-                        </div>
-                    </div>
-
-                    <!-- Day 4 -->
-                    <div class="relative pl-6">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white shadow"></div>
-                        <h4 class="font-bold text-indigo-900 text-base mb-1">Day 4 (11/26) 市區購物與美食巡禮</h4>
-                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 space-y-1">
-                            <p>⏳ 伴手禮採買與人氣美食</p>
-                            <p>📌 <b>待填入景點/餐廳</b></p>
-                        </div>
-                    </div>
-
-                    <!-- Day 5 -->
-                    <div class="relative pl-6">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white shadow"></div>
-                        <h4 class="font-bold text-indigo-900 text-base mb-1">Day 5 (11/27) 賦歸賦歸</h4>
-                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 space-y-1">
-                            <p>⏳ 還車與前往機場</p>
-                            <p>⏳ 11:45 濟州機場起飛 ➔ 12:55 抵達桃園</p>
-                        </div>
-                    </div>
-
+                <!-- 每天的時間線列表容器 -->
+                <div id="itinerary-days-container" class="space-y-6">
+                    <!-- 動態帶入 -->
                 </div>
-
             </div>
+
             <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
-                <button onclick="closeItineraryModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-sm font-medium transition shadow-sm">關閉</button>
+                <button onclick="closeItineraryModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl text-sm font-medium transition shadow-sm">完成與關閉</button>
             </div>
         </div>
     </div>
@@ -255,6 +204,9 @@
                         }
                         renderSidebar();
                         renderMainContent();
+                        if (!document.getElementById('itinerary-modal').classList.contains('hidden')) {
+                            renderItineraryModal();
+                        }
                     }
                 } else {
                     projects = [
@@ -263,6 +215,7 @@
                             name: '2026 濟州島五天四夜',
                             desc: '11/23 - 11/27 全程自駕遊規劃',
                             isFinished: false,
+                            itinerary: [],
                             items: []
                         }
                     ];
@@ -383,6 +336,7 @@
                 name: name,
                 desc: desc,
                 isFinished: false,
+                itinerary: [],
                 items: []
             });
             currentProjectId = newId;
@@ -401,7 +355,6 @@
             }
         }
 
-        // 切換結案狀態
         function toggleFinishProject() {
             const currentProj = projects.find(p => p.id === currentProjectId);
             if (!currentProj) return;
@@ -412,13 +365,136 @@
             renderMainContent();
         }
 
-        // 開啟行程規劃 Modal
+        // 行程規劃相關操作
         function openItineraryModal() {
+            renderItineraryModal();
             document.getElementById('itinerary-modal').classList.remove('hidden');
         }
 
         function closeItineraryModal() {
             document.getElementById('itinerary-modal').classList.add('hidden');
+        }
+
+        function addItineraryDay(e) {
+            e.preventDefault();
+            const input = document.getElementById('day-title-input');
+            const title = input.value.trim();
+            if (!title) return;
+
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            if (!currentProj.itinerary) currentProj.itinerary = [];
+
+            currentProj.itinerary.push({
+                id: 'day-' + Date.now(),
+                title: title,
+                slots: []
+            });
+
+            input.value = '';
+            saveDataToCloud();
+            renderItineraryModal();
+        }
+
+        function deleteItineraryDay(dayId) {
+            if (confirm('確定要刪除這天行程嗎？')) {
+                const currentProj = projects.find(p => p.id === currentProjectId);
+                currentProj.itinerary = currentProj.itinerary.filter(d => d.id !== dayId);
+                saveDataToCloud();
+                renderItineraryModal();
+            }
+        }
+
+        function addItinerarySlot(e, dayId) {
+            e.preventDefault();
+            const timeInput = document.getElementById(`time-${dayId}`);
+            const contentInput = document.getElementById(`content-${dayId}`);
+
+            const time = timeInput.value.trim();
+            const content = contentInput.value.trim();
+            if (!time || !content) return;
+
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const day = currentProj.itinerary.find(d => d.id === dayId);
+            if (day) {
+                day.slots.push({
+                    id: 'slot-' + Date.now(),
+                    time: time,
+                    content: content
+                });
+                timeInput.value = '';
+                contentInput.value = '';
+                saveDataToCloud();
+                renderItineraryModal();
+            }
+        }
+
+        function deleteItinerarySlot(dayId, slotId) {
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const day = currentProj.itinerary.find(d => d.id === dayId);
+            if (day) {
+                day.slots = day.slots.filter(s => s.id !== slotId);
+                saveDataToCloud();
+                renderItineraryModal();
+            }
+        }
+
+        function renderItineraryModal() {
+            const container = document.getElementById('itinerary-days-container');
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            if (!currentProj) return;
+
+            if (!currentProj.itinerary || currentProj.itinerary.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">目前還沒有新增任何天數，請從上方新增。</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            currentProj.itinerary.forEach((day, index) => {
+                const dayBox = document.createElement('div');
+                dayBox.className = 'bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-sm';
+                
+                let slotsHtml = '';
+                if (day.slots && day.slots.length > 0) {
+                    day.slots.forEach(slot => {
+                        slotsHtml += `
+                            <div class="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm text-xs">
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">${slot.time}</span>
+                                    <span class="text-slate-700">${slot.content}</span>
+                                </div>
+                                <button onclick="deleteItinerarySlot('${day.id}', '${slot.id}')" class="text-slate-400 hover:text-rose-600 p-1"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        `;
+                    });
+                } else {
+                    slotsHtml = `<p class="text-slate-400 text-xs italic py-1">這天尚無時間點安排...</p>`;
+                }
+
+                dayBox.innerHTML = `
+                    <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
+                        <h5 class="font-bold text-slate-800 text-sm flex items-center">
+                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center mr-2">${index + 1}</span>
+                            ${day.title}
+                        </h5>
+                        <button onclick="deleteItineraryDay('${day.id}')" class="text-xs text-rose-500 hover:text-rose-700 font-medium">刪除此天</button>
+                    </div>
+
+                    <div class="space-y-2 mb-3">
+                        ${slotsHtml}
+                    </div>
+
+                    <form onsubmit="addItinerarySlot(event, '${day.id}')" class="flex gap-2 pt-2 border-t border-slate-200/60">
+                        <input type="text" id="time-${day.id}" required placeholder="時間 (例如 10:30)" 
+                               class="w-28 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
+                        <input type="text" id="content-${day.id}" required placeholder="地點或活動內容" 
+                               class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
+                        <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white font-medium px-3 py-1.5 rounded-lg transition text-xs">
+                            新增時間點
+                        </button>
+                    </form>
+                `;
+                container.appendChild(dayBox);
+            });
         }
 
         function renderMainContent() {
@@ -437,7 +513,7 @@
             const shopCount = currentProj.items.filter(i => i.category === '購物').length;
 
             container.innerHTML = `
-                <!-- 專案標題列 (含新增的兩個按鈕) -->
+                <!-- 專案標題列 -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <div class="flex items-center space-x-2 mb-2">
@@ -448,13 +524,11 @@
                         <p class="text-slate-500 text-sm mt-1">${currentProj.desc || '大家一起來投票決定想去的景點與餐廳吧！'}</p>
                     </div>
 
-                    <!-- 右側按鈕區 (紅框指定位置) -->
+                    <!-- 右側按鈕區 -->
                     <div class="flex items-center space-x-2.5 flex-wrap gap-2">
-                        <!-- 是否結案按鈕 -->
                         <button onclick="toggleFinishProject()" class="px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center shadow-sm ${isFin ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'}">
                             <i class="fa-solid ${isFin ? 'fa-box-archive' : 'fa-circle-check'} mr-1.5"></i> ${isFin ? '已結案 (點擊取消)' : '是否結案'}
                         </button>
-                        <!-- 行程規劃按鈕 -->
                         <button onclick="openItineraryModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center shadow-md shadow-indigo-200">
                             <i class="fa-solid fa-route mr-1.5"></i> 行程規劃
                         </button>
@@ -736,7 +810,7 @@
                                     </button>
                                 </h4>
                             </div>
-                            <!-- 投票統計數量（有票時自動變深色背景） -->
+                            <!-- 投票統計數量 -->
                             <div class="flex flex-wrap gap-2 text-xs mb-2">
                                 <button onclick="showVoters('${item.id}', 'yes')" class="${yesClass} px-2.5 py-1 rounded-lg transition flex items-center shadow-sm" title="點擊查看誰投了想去">
                                     👍 必去 (${yesCount}) <i class="fa-solid fa-users text-[10px] ml-1.5 opacity-80"></i>
@@ -758,7 +832,7 @@
                             </div>
                         </div>
 
-                        <!-- 投票按鈕群組（支援再次點擊取消） -->
+                        <!-- 投票按鈕群組 -->
                         <div class="pt-2 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
                             <span class="text-xs font-medium text-slate-400">您的投票：</span>
                             <div class="flex space-x-2">
