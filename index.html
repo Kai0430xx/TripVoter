@@ -532,14 +532,13 @@
             }
         }
 
-        // 💡 讓已存在的行程類別也可以直接點擊下拉修改
         function updateSlotCategory(dayId, slotId, newCat) {
             if (newCat === 'ADD_NEW') {
                 const customCat = prompt('請輸入自訂類別名稱：');
                 if (customCat && customCat.trim() !== '') {
                     newCat = customCat.trim();
                 } else {
-                    renderItineraryModal(); // 取消則重置畫面
+                    renderItineraryModal();
                     return;
                 }
             }
@@ -734,9 +733,7 @@
                         const hasNotes = slot.notes && slot.notes.trim() !== '';
                         const slotCat = slot.category || '景點';
 
-                        // 生成每個行程項目專屬的類別下拉選單
                         let slotCatOptions = '';
-                        // 確保目前選中的類別也在選項內
                         let fullCats = [...defaultCategories];
                         if (!fullCats.includes(slotCat)) fullCats.push(slotCat);
 
@@ -750,10 +747,10 @@
                                     <div class="flex items-center space-x-2">
                                         <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg">${slot.time}</span>
                                         
-                                        <!-- 💡 每個行程旁邊直接就是可點擊修改的類別下拉選單 (顏色區隔為琥珀橘色系) -->
+                                        <!-- 類別下拉選單 (精簡為 +新增) -->
                                         <select onchange="updateSlotCategory('${day.id}', '${slot.id}', this.value)" class="bg-amber-50 text-amber-800 border border-amber-200 font-semibold px-2 py-0.5 rounded-md outline-none cursor-pointer hover:bg-amber-100 transition">
                                             ${slotCatOptions}
-                                            <option value="ADD_NEW" class="font-bold text-amber-700">+ 自行新增...</option>
+                                            <option value="ADD_NEW" class="font-bold text-amber-700">+新增</option>
                                         </select>
 
                                         <span class="text-slate-800 font-medium">${slot.content}</span>
@@ -795,9 +792,9 @@
                         <input type="text" id="time-${day.id}" required placeholder="時間 (例如 08:00)" 
                                class="w-full sm:w-24 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
                         
-                        <select id="category-select-${day.id}" onchange="handleCategoryChange('${day.id}')" class="w-28 px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 focus:ring-2 focus:ring-amber-500 outline-none text-xs font-semibold text-amber-800">
+                        <select id="category-select-${day.id}" onchange="handleCategoryChange('${day.id}')" class="w-24 px-2 py-1.5 rounded-lg border border-amber-300 bg-amber-50 focus:ring-2 focus:ring-amber-500 outline-none text-xs font-semibold text-amber-800">
                             ${catOptionsHtml}
-                            <option value="ADD_NEW" class="font-bold text-amber-700">+ 自行新增類別...</option>
+                            <option value="ADD_NEW" class="font-bold text-amber-700">+新增</option>
                         </select>
 
                         <select id="select-${day.id}" class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
@@ -1101,7 +1098,7 @@
                     : 'bg-amber-50 text-amber-700 font-medium hover:bg-amber-100';
 
                 const noClass = noCount > 0 
-                    ? 'bg-rose-600 text-white shadow-md shadow-rose-200 font-bold' 
+                    ? 'bg-rose-600 text-white shadow-md shadow-amber-200 font-bold' 
                     : 'bg-rose-50 text-rose-700 font-medium hover:bg-rose-100';
 
                 const hasYes = item.votes.yes.includes(username);
