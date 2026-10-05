@@ -244,7 +244,24 @@
         let projects = [];
         let selectedItemForQuickAdd = null;
 
-        const defaultCategories = ['景點', '美食', '餐廳', '咖啡廳', '購物', '玩樂'];
+        const baseCategories = ['景點', '美食', '餐廳', '咖啡廳', '購物', '玩樂'];
+
+        // 💡 取得當前專案所有用過的類別（包含自訂類別，並自動去除重複）
+        function getAllCategories(proj) {
+            let cats = [...baseCategories];
+            if (proj && proj.itinerary) {
+                proj.itinerary.forEach(day => {
+                    if (day.slots) {
+                        day.slots.forEach(slot => {
+                            if (slot.category && !cats.includes(slot.category)) {
+                                cats.push(slot.category);
+                            }
+                        });
+                    }
+                });
+            }
+            return cats;
+        }
 
         function initFirestoreListener() {
             db.collection("tripvoter_data").doc("main").onSnapshot((doc) => {
@@ -514,17 +531,25 @@
                 const newCat = prompt('請輸入自訂類別名稱：');
                 if (newCat && newCat.trim() !== '') {
                     const trimmed = newCat.trim();
-                    const options = selectEl.querySelectorAll('option');
-                    let exists = false;
-                    options.forEach(opt => {
-                        if (opt.value === trimmed) exists = true;
-                    });
-                    if (!exists) {
-                        const newOpt = document.createElement('option');
-                        newOpt.value = trimmed;
-                        newOpt.textContent = trimmed;
-                        selectEl.insertBefore(newOpt, selectEl.lastElementChild);
+                    const currentProj = projects.find(p => p.id === currentProjectId);
+                    let allCats = getAllCategories(currentProj);
+                    if (!allCats.includes(trimmed)) {
+                        // 暫時將新類別加入一個預設 slot 或是直接重繪以同步所有選單
+                        // 這裡我們直接在某個地方記錄，或者透過新增一筆暫時記錄讓它被 getAllCategories 捕捉
                     }
+                    // 為了立即生效，我們直接在當前畫面的所有 category dropdown 補上這個選項
+                    document.querySelectorAll('[id^="category-select-"]').forEach(sel => {
+                        let exists = false;
+                        sel.querySelectorAll('option').forEach(opt => {
+                            if (opt.value === trimmed) exists = true;
+                        });
+                        if (!exists) {
+                            const newOpt = document.createElement('option');
+                            newOpt.value = trimmed;
+                            newOpt.textContent = trimmed;
+                            sel.insertBefore(newOpt, sel.lastElementChild);
+                        }
+                    });
                     selectEl.value = trimmed;
                 } else {
                     selectEl.value = '景點';
@@ -551,7 +576,7 @@
 
             slot.category = newCat;
             saveDataToCloud();
-            renderItineraryModal();
+            renderItineraryModal(); // 重新渲染以同步所有選單
         }
 
         function addItinerarySlot(e, dayId) {
@@ -712,8 +737,10 @@
                 });
             }
 
+            // 💡 取得包含所有自訂類別的全域清單
+            const allCats = getAllCategories(currentProj);
             let catOptionsHtml = '';
-            defaultCategories.forEach(cat => {
+            allCats.forEach(cat => {
                 catOptionsHtml += `<option value="${cat}">${cat}</option>`;
             });
 
@@ -734,7 +761,7 @@
                         const slotCat = slot.category || '景點';
 
                         let slotCatOptions = '';
-                        let fullCats = [...defaultCategories];
+                        let fullCats = [...allCats];
                         if (!fullCats.includes(slotCat)) fullCats.push(slotCat);
 
                         fullCats.forEach(c => {
@@ -747,7 +774,7 @@
                                     <div class="flex items-center space-x-2">
                                         <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg">${slot.time}</span>
                                         
-                                        <!-- 類別下拉選單 (精簡為 +新增) -->
+                                        <!-- 類別下拉選單 (同步所有自訂類別) -->
                                         <select onchange="updateSlotCategory('${day.id}', '${slot.id}', this.value)" class="bg-amber-50 text-amber-800 border border-amber-200 font-semibold px-2 py-0.5 rounded-md outline-none cursor-pointer hover:bg-amber-100 transition">
                                             ${slotCatOptions}
                                             <option value="ADD_NEW" class="font-bold text-amber-700">+新增</option>
