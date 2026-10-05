@@ -123,8 +123,33 @@
                 </div>
             </div>
 
-            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+            <!-- 底部按鈕區：包含導出按鈕 -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                <button onclick="openExportModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-sm font-medium transition shadow-sm flex items-center">
+                    <i class="fa-solid fa-file-lines mr-1.5"></i> 導出純文字行程
+                </button>
                 <button onclick="closeItineraryModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl text-sm font-medium transition shadow-sm">完成與關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 純文字導出 Modal -->
+    <div id="export-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                    <i class="fa-solid fa-clipboard text-emerald-600 mr-2"></i> 純文字行程表（可直接複製）
+                </h3>
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <textarea id="export-textarea" readonly class="w-full h-80 p-4 rounded-xl border border-slate-300 font-mono text-xs bg-slate-50 text-slate-700 outline-none resize-none"></textarea>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end space-x-2">
+                <button onclick="copyExportText()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-sm font-medium transition shadow-sm flex items-center">
+                    <i class="fa-solid fa-copy mr-1.5"></i> 複製到剪貼簿
+                </button>
+                <button onclick="closeExportModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-5 py-2 rounded-xl text-sm font-medium transition">關閉</button>
             </div>
         </div>
     </div>
@@ -218,6 +243,9 @@
         let currentFilter = '全部';
         let projects = [];
         let selectedItemForQuickAdd = null;
+
+        // 預設類別清單
+        const defaultCategories = ['景點', '美食', '餐廳', '咖啡廳', '購物', '玩樂'];
 
         function initFirestoreListener() {
             db.collection("tripvoter_data").doc("main").onSnapshot((doc) => {
@@ -402,6 +430,51 @@
             document.getElementById('itinerary-modal').classList.add('hidden');
         }
 
+        // 導出純文字行程相關操作
+        function openExportModal() {
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            if (!currentProj) return;
+
+            let text = `=====================\n`;
+            text += ` 旅遊專案：${currentProj.name}\n`;
+            text += ` 簡介：${currentProj.desc || '無'}\n`;
+            text += `=====================\n\n`;
+
+            if (!currentProj.itinerary || currentProj.itinerary.length === 0) {
+                text += `目前尚無任何行程規劃內容。\n`;
+            } else {
+                currentProj.itinerary.forEach(day => {
+                    text += `【 ${day.title} 】\n`;
+                    if (day.slots && day.slots.length > 0) {
+                        day.slots.forEach(slot => {
+                            const catTag = slot.category ? `[${slot.category}]` : '';
+                            text += `  • ${slot.time} ${catTag} ${slot.content}\n`;
+                            if (slot.notes) {
+                                text += `    備註：${slot.notes}\n`;
+                            }
+                        });
+                    } else {
+                        text += `  (本日尚無安排)\n`;
+                    }
+                    text += `\n`;
+                });
+            }
+
+            document.getElementById('export-textarea').value = text;
+            document.getElementById('export-modal').classList.remove('hidden');
+        }
+
+        function closeExportModal() {
+            document.getElementById('export-modal').classList.add('hidden');
+        }
+
+        function copyExportText() {
+            const textarea = document.getElementById('export-textarea');
+            textarea.select();
+            document.execCommand('copy');
+            alert('已成功複製純文字行程到剪貼簿！');
+        }
+
         function addItineraryDay(e) {
             e.preventDefault();
             const currentProj = projects.find(p => p.id === currentProjectId);
@@ -437,13 +510,40 @@
             }
         }
 
+        function handleCategoryChange(dayId) {
+            const selectEl = document.getElementById(`category-select-${dayId}`);
+            if (selectEl.value === 'ADD_NEW') {
+                const newCat = prompt('請輸入自訂類別名稱：');
+                if (newCat && newCat.trim() !== '') {
+                    const trimmed = newCat.trim();
+                    // 將新類別存入專案或全域，這裡動態加入選項
+                    const options = selectEl.querySelectorAll('option');
+                    let exists = false;
+                    options.forEach(opt => {
+                        if (opt.value === trimmed) exists = true;
+                    });
+                    if (!exists) {
+                        const newOpt = document.createElement('option');
+                        newOpt.value = trimmed;
+                        newOpt.textContent = trimmed;
+                        selectEl.insertBefore(newOpt, selectEl.lastElementChild);
+                    }
+                    selectEl.value = trimmed;
+                } else {
+                    selectEl.value = '景點'; // 預設
+                }
+            }
+        }
+
         function addItinerarySlot(e, dayId) {
             e.preventDefault();
             const timeInput = document.getElementById(`time-${dayId}`);
+            const categorySelect = document.getElementById(`category-select-${dayId}`);
             const selectEl = document.getElementById(`select-${dayId}`);
             const inputEl = document.getElementById(`input-${dayId}`);
 
             const time = timeInput.value.trim();
+            const category = categorySelect.value || '景點';
             let content = selectEl.value ? selectEl.value : inputEl.value.trim();
 
             if (!time || !content) return;
@@ -454,6 +554,7 @@
                 day.slots.push({
                     id: 'slot-' + Date.now(),
                     time: time,
+                    category: category,
                     content: content,
                     notes: ''
                 });
@@ -461,6 +562,7 @@
                 day.slots.sort((a, b) => a.time.localeCompare(b.time));
 
                 timeInput.value = '';
+                categorySelect.value = '景點';
                 selectEl.value = '';
                 inputEl.value = '';
                 saveDataToCloud();
@@ -480,7 +582,6 @@
             }
         }
 
-        // 💡 新增：修改已存在的行程時間或活動內容
         function editItinerarySlot(dayId, slotId) {
             const currentProj = projects.find(p => p.id === currentProjectId);
             const day = currentProj.itinerary.find(d => d.id === dayId);
@@ -490,13 +591,16 @@
 
             const newTime = prompt('請修改時間：', slot.time);
             if (newTime === null) return;
+            const newCat = prompt('請修改類別（景點/美食/餐廳/咖啡廳/購物/玩樂 或自訂）：', slot.category || '景點');
+            if (newCat === null) return;
             const newContent = prompt('請修改活動內容或地點：', slot.content);
             if (newContent === null) return;
 
             if (newTime.trim() && newContent.trim()) {
                 slot.time = newTime.trim();
+                slot.category = newCat.trim();
                 slot.content = newContent.trim();
-                day.slots.sort((a, b) => a.time.localeCompare(b.time)); // 重新依時間排序
+                day.slots.sort((a, b) => a.time.localeCompare(b.time));
                 saveDataToCloud();
                 renderItineraryModal();
                 renderItems();
@@ -539,6 +643,7 @@
                 listContainer.appendChild(btn);
             });
 
+            document.getElementById('quick-add-modal').classList.add('hidden');
             document.getElementById('quick-add-modal').classList.remove('hidden');
         }
 
@@ -554,9 +659,17 @@
             const currentProj = projects.find(p => p.id === currentProjectId);
             const day = currentProj.itinerary.find(d => d.id === dayId);
             if (day) {
+                // 自動抓取該景點原本的分類
+                let matchedCat = '景點';
+                if (currentProj.items) {
+                    const found = currentProj.items.find(i => i.name === itemName);
+                    if (found) matchedCat = found.category;
+                }
+
                 day.slots.push({
                     id: 'slot-' + Date.now(),
                     time: time.trim(),
+                    category: matchedCat,
                     content: itemName,
                     notes: ''
                 });
@@ -584,6 +697,11 @@
                 });
             }
 
+            let catOptionsHtml = '';
+            defaultCategories.forEach(cat => {
+                catOptionsHtml += `<option value="${cat}">${cat}</option>`;
+            });
+
             if (!currentProj.itinerary || currentProj.itinerary.length === 0) {
                 container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">目前還沒有新增任何天數，請從上方新增。</div>`;
                 return;
@@ -598,19 +716,20 @@
                 if (day.slots && day.slots.length > 0) {
                     day.slots.forEach(slot => {
                         const hasNotes = slot.notes && slot.notes.trim() !== '';
+                        const slotCat = slot.category || '景點';
                         slotsHtml += `
                             <div class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm text-xs space-y-1.5">
                                 <div class="flex items-center justify-between">
-                                    <div class="flex items-center space-x-3">
-                                        <span class="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">${slot.time}</span>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg">${slot.time}</span>
+                                        <span class="bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded-md">[${slotCat}]</span>
                                         <span class="text-slate-800 font-medium">${slot.content}</span>
                                     </div>
                                     <div class="flex items-center space-x-1">
-                                        <!-- 編輯按鈕 -->
                                         <button onclick="editItinerarySlot('${day.id}', '${slot.id}')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition flex items-center" title="修改時間或內容">
                                             <i class="fa-solid fa-pen mr-1"></i> 編輯
                                         </button>
-                                        <button onclick="editSlotNotes('${day.id}', '${slot.id}')" class="px-2.5 py-1 rounded-lg transition flex items-center ${hasNotes ? 'bg-indigo-600 text-white font-medium shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}" title="${hasNotes ? '檢視/修改備註' : '新增備註（地址、營業時間等）'}">
+                                        <button onclick="editSlotNotes('${day.id}', '${slot.id}')" class="px-2.5 py-1 rounded-lg transition flex items-center ${hasNotes ? 'bg-indigo-600 text-white font-medium shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}" title="${hasNotes ? '檢視/修改備註' : '新增備註'}">
                                             <i class="fa-solid fa-file-lines mr-1"></i> ${hasNotes ? '有備註' : '備註'}
                                         </button>
                                         <button onclick="deleteItinerarySlot('${day.id}', '${slot.id}')" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition" title="刪除">
@@ -641,7 +760,14 @@
 
                     <form onsubmit="addItinerarySlot(event, '${day.id}')" class="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-200/60">
                         <input type="text" id="time-${day.id}" required placeholder="時間 (例如 08:00)" 
-                               class="w-full sm:w-28 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
+                               class="w-full sm:w-24 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
+                        
+                        <!-- 類別下拉選單 (含自訂) -->
+                        <select id="category-select-${day.id}" onchange="handleCategoryChange('${day.id}')" class="w-28 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white font-medium text-indigo-700">
+                            ${catOptionsHtml}
+                            <option value="ADD_NEW" class="text-indigo-600 font-bold">+ 自行新增類別...</option>
+                        </select>
+
                         <select id="select-${day.id}" class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
                             ${itemOptionsHtml}
                         </select>
