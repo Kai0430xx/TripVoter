@@ -129,6 +129,20 @@
         </div>
     </div>
 
+    <!-- 快速加入行程選擇 Day 的 Modal -->
+    <div id="quick-add-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <h3 class="text-base font-bold text-slate-900 mb-3 flex items-center">
+                <i class="fa-solid fa-calendar-plus text-indigo-600 mr-2"></i> 選擇要加入哪一天
+            </h3>
+            <p id="quick-add-item-name" class="text-xs text-slate-500 mb-4 font-semibold text-indigo-600"></p>
+            <div id="quick-add-days-list" class="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                <!-- 動態帶入天數按鈕 -->
+            </div>
+            <button onclick="closeQuickAddModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-medium transition">取消</button>
+        </div>
+    </div>
+
     <!-- 訪客輸入名字 Modal -->
     <div id="username-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
@@ -203,6 +217,7 @@
         let currentProjectId = localStorage.getItem('tripvoter_current_project') || '';
         let currentFilter = '全部';
         let projects = [];
+        let selectedItemForQuickAdd = null;
 
         function initFirestoreListener() {
             db.collection("tripvoter_data").doc("main").onSnapshot((doc) => {
@@ -379,6 +394,7 @@
         // 行程規劃相關操作
         function openItineraryModal() {
             renderItineraryModal();
+            document.getElementById('itinerary-modal').classList.add('hidden'); // 先關閉可能開著的
             document.getElementById('itinerary-modal').classList.remove('hidden');
         }
 
@@ -423,10 +439,13 @@
         function addItinerarySlot(e, dayId) {
             e.preventDefault();
             const timeInput = document.getElementById(`time-${dayId}`);
-            const contentInput = document.getElementById(`content-${dayId}`);
+            const selectEl = document.getElementById(`select-${dayId}`);
+            const inputEl = document.getElementById(`input-${dayId}`);
 
             const time = timeInput.value.trim();
-            const content = contentInput.value.trim();
+            // 優先抓取下拉選單的值，若下拉沒選或切換成手動則抓文字框
+            let content = selectEl.value ? selectEl.value : inputEl.value.trim();
+
             if (!time || !content) return;
 
             const currentProj = projects.find(p => p.id === currentProjectId);
@@ -436,13 +455,14 @@
                     id: 'slot-' + Date.now(),
                     time: time,
                     content: content,
-                    notes: '' // 預設備註欄位（地址、營業時間等）
+                    notes: ''
                 });
 
                 day.slots.sort((a, b) => a.time.localeCompare(b.time));
 
                 timeInput.value = '';
-                contentInput.value = '';
+                selectEl.value = '';
+                inputEl.value = '';
                 saveDataToCloud();
                 renderItineraryModal();
             }
@@ -458,7 +478,6 @@
             }
         }
 
-        // 編輯行程項目的備註（地址、營業時間等）
         function editSlotNotes(dayId, slotId) {
             const currentProj = projects.find(p => p.id === currentProjectId);
             const day = currentProj.itinerary.find(d => d.id === dayId);
@@ -474,6 +493,56 @@
             }
         }
 
+        // 快速加入行程互動功能
+        function openQuickAddModal(itemName) {
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            if (!currentProj || !currentProj.itinerary || currentProj.itinerary.length === 0) {
+                alert('請先點擊右上角的「行程規劃」新增至少一天行程！');
+                return;
+            }
+
+            selectedItemForQuickAdd = itemName;
+            document.getElementById('quick-add-item-name').textContent = `目標景點：${itemName}`;
+            
+            const listContainer = document.getElementById('quick-add-days-list');
+            listContainer.innerHTML = '';
+
+            currentProj.itinerary.forEach(day => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 p-2.5 rounded-xl text-xs font-medium transition border border-slate-200';
+                btn.innerHTML = `<i class="fa-solid fa-calendar-day mr-1.5 text-indigo-600"></i> ${day.title}`;
+                btn.onclick = () => addQuickAddSlot(day.id, itemName);
+                listContainer.appendChild(btn);
+            });
+
+            document.getElementById('quick-add-modal').classList.remove('hidden');
+        }
+
+        function closeQuickAddModal() {
+            document.getElementById('quick-add-modal').classList.add('hidden');
+            selectedItemForQuickAdd = null;
+        }
+
+        function addQuickAddSlot(dayId, itemName) {
+            const time = prompt('請輸入預計抵達時間（例如 13:00）：', '10:00');
+            if (!time) return;
+
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const day = currentProj.itinerary.find(d => d.id === dayId);
+            if (day) {
+                day.slots.push({
+                    id: 'slot-' + Date.now(),
+                    time: time.trim(),
+                    content: itemName,
+                    notes: ''
+                });
+                day.slots.sort((a, b) => a.time.localeCompare(b.time));
+                saveDataToCloud();
+                closeQuickAddModal();
+                alert(`成功將「${itemName}」加入行程中！`);
+            }
+        }
+
         function renderItineraryModal() {
             const container = document.getElementById('itinerary-days-container');
             const badge = document.getElementById('next-day-badge');
@@ -482,6 +551,14 @@
 
             const nextDayNum = (currentProj.itinerary ? currentProj.itinerary.length : 0) + 1;
             if (badge) badge.textContent = `Day ${nextDayNum}`;
+
+            // 收集專案裡所有景點與美食名稱供下拉選單使用
+            let itemOptionsHtml = '<option value="">-- 從投票清單下拉選擇景點 --</option>';
+            if (currentProj.items && currentProj.items.length > 0) {
+                currentProj.items.forEach(item => {
+                    itemOptionsHtml += `<option value="${item.name}">${item.name} (${item.category})</option>`;
+                });
+            }
 
             if (!currentProj.itinerary || currentProj.itinerary.length === 0) {
                 container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">目前還沒有新增任何天數，請從上方新增。</div>`;
@@ -505,7 +582,6 @@
                                         <span class="text-slate-800 font-medium">${slot.content}</span>
                                     </div>
                                     <div class="flex items-center space-x-1">
-                                        <!-- 文件/備註按鈕 -->
                                         <button onclick="editSlotNotes('${day.id}', '${slot.id}')" class="px-2.5 py-1 rounded-lg transition flex items-center ${hasNotes ? 'bg-indigo-600 text-white font-medium shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}" title="${hasNotes ? '檢視/修改備註' : '新增備註（地址、營業時間等）'}">
                                             <i class="fa-solid fa-file-lines mr-1"></i> ${hasNotes ? '有備註' : '備註'}
                                         </button>
@@ -535,10 +611,13 @@
                         ${slotsHtml}
                     </div>
 
-                    <form onsubmit="addItinerarySlot(event, '${day.id}')" class="flex gap-2 pt-2 border-t border-slate-200/60">
+                    <form onsubmit="addItinerarySlot(event, '${day.id}')" class="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-200/60">
                         <input type="text" id="time-${day.id}" required placeholder="時間 (例如 08:00)" 
-                               class="w-28 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
-                        <input type="text" id="content-${day.id}" required placeholder="地點或活動內容" 
+                               class="w-full sm:w-28 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
+                        <select id="select-${day.id}" class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
+                            ${itemOptionsHtml}
+                        </select>
+                        <input type="text" id="input-${day.id}" placeholder="或自行手動打字..." 
                                class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
                         <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white font-medium px-3 py-1.5 rounded-lg transition text-xs">
                             新增時間點
@@ -805,6 +884,12 @@
                 const maybeCount = item.votes.maybe.length;
                 const noCount = item.votes.no.length;
 
+                // 檢查是否有人投票（只要有人投過票，右上角的加入按鈕就會發亮）
+                const hasAnyVotes = yesCount > 0 || maybeCount > 0 || noCount > 0;
+                const addBtnClass = hasAnyVotes 
+                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200 font-bold' 
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200 font-medium';
+
                 const yesClass = yesCount > 0 
                     ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 font-bold' 
                     : 'bg-emerald-50 text-emerald-700 font-medium hover:bg-emerald-100';
@@ -824,7 +909,7 @@
                 const finalMapUrl = item.mapUrl ? item.mapUrl : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
 
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row items-stretch transition hover:shadow-md';
+                card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row items-stretch transition hover:shadow-md relative';
                 card.innerHTML = `
                     <!-- 左側固定高度圖片區 -->
                     <div class="md:w-72 h-52 flex-shrink-0 relative bg-slate-100 overflow-hidden">
@@ -855,13 +940,18 @@
                     <div class="p-5 flex-1 flex flex-col justify-between h-52">
                         <div>
                             <div class="flex justify-between items-center mb-1">
-                                <h4 class="text-xl font-bold text-slate-900 truncate flex items-center">
+                                <h4 class="text-xl font-bold text-slate-900 truncate flex items-center pr-24">
                                     ${item.name}
                                     <button onclick="editItemName('${item.id}')" class="ml-2 text-slate-400 hover:text-indigo-600 text-xs p-1" title="修改標題名稱">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
                                 </h4>
+                                <!-- 右上角加入行程按鈕 (有點票時會發亮) -->
+                                <button onclick="openQuickAddModal('${item.name.replace(/'/g, "\\'")}')" class="absolute top-4 right-4 px-3.5 py-1.5 rounded-xl text-xs transition flex items-center shadow-sm ${addBtnClass}" title="快速加入行程">
+                                    <i class="fa-solid fa-plus mr-1"></i> 加入行程
+                                </button>
                             </div>
+
                             <!-- 投票統計數量 -->
                             <div class="flex flex-wrap gap-2 text-xs mb-2">
                                 <button onclick="showVoters('${item.id}', 'yes')" class="${yesClass} px-2.5 py-1 rounded-lg transition flex items-center shadow-sm" title="點擊查看誰投了想去">
