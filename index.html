@@ -123,7 +123,7 @@
                 </div>
             </div>
 
-            <!-- 底部按鈕區：包含導出按鈕 -->
+            <!-- 底部按鈕區 -->
             <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
                 <button onclick="openExportModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-sm font-medium transition shadow-sm flex items-center">
                     <i class="fa-solid fa-file-lines mr-1.5"></i> 導出純文字行程
@@ -244,7 +244,6 @@
         let projects = [];
         let selectedItemForQuickAdd = null;
 
-        // 預設類別清單
         const defaultCategories = ['景點', '美食', '餐廳', '咖啡廳', '購物', '玩樂'];
 
         function initFirestoreListener() {
@@ -430,7 +429,6 @@
             document.getElementById('itinerary-modal').classList.add('hidden');
         }
 
-        // 導出純文字行程相關操作
         function openExportModal() {
             const currentProj = projects.find(p => p.id === currentProjectId);
             if (!currentProj) return;
@@ -516,7 +514,6 @@
                 const newCat = prompt('請輸入自訂類別名稱：');
                 if (newCat && newCat.trim() !== '') {
                     const trimmed = newCat.trim();
-                    // 將新類別存入專案或全域，這裡動態加入選項
                     const options = selectEl.querySelectorAll('option');
                     let exists = false;
                     options.forEach(opt => {
@@ -530,9 +527,32 @@
                     }
                     selectEl.value = trimmed;
                 } else {
-                    selectEl.value = '景點'; // 預設
+                    selectEl.value = '景點';
                 }
             }
+        }
+
+        // 💡 讓已存在的行程類別也可以直接點擊下拉修改
+        function updateSlotCategory(dayId, slotId, newCat) {
+            if (newCat === 'ADD_NEW') {
+                const customCat = prompt('請輸入自訂類別名稱：');
+                if (customCat && customCat.trim() !== '') {
+                    newCat = customCat.trim();
+                } else {
+                    renderItineraryModal(); // 取消則重置畫面
+                    return;
+                }
+            }
+
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const day = currentProj.itinerary.find(d => d.id === dayId);
+            if (!day) return;
+            const slot = day.slots.find(s => s.id === slotId);
+            if (!slot) return;
+
+            slot.category = newCat;
+            saveDataToCloud();
+            renderItineraryModal();
         }
 
         function addItinerarySlot(e, dayId) {
@@ -591,14 +611,11 @@
 
             const newTime = prompt('請修改時間：', slot.time);
             if (newTime === null) return;
-            const newCat = prompt('請修改類別（景點/美食/餐廳/咖啡廳/購物/玩樂 或自訂）：', slot.category || '景點');
-            if (newCat === null) return;
             const newContent = prompt('請修改活動內容或地點：', slot.content);
             if (newContent === null) return;
 
             if (newTime.trim() && newContent.trim()) {
                 slot.time = newTime.trim();
-                slot.category = newCat.trim();
                 slot.content = newContent.trim();
                 day.slots.sort((a, b) => a.time.localeCompare(b.time));
                 saveDataToCloud();
@@ -659,7 +676,6 @@
             const currentProj = projects.find(p => p.id === currentProjectId);
             const day = currentProj.itinerary.find(d => d.id === dayId);
             if (day) {
-                // 自動抓取該景點原本的分類
                 let matchedCat = '景點';
                 if (currentProj.items) {
                     const found = currentProj.items.find(i => i.name === itemName);
@@ -717,12 +733,29 @@
                     day.slots.forEach(slot => {
                         const hasNotes = slot.notes && slot.notes.trim() !== '';
                         const slotCat = slot.category || '景點';
+
+                        // 生成每個行程項目專屬的類別下拉選單
+                        let slotCatOptions = '';
+                        // 確保目前選中的類別也在選項內
+                        let fullCats = [...defaultCategories];
+                        if (!fullCats.includes(slotCat)) fullCats.push(slotCat);
+
+                        fullCats.forEach(c => {
+                            slotCatOptions += `<option value="${c}" ${c === slotCat ? 'selected' : ''}>${c}</option>`;
+                        });
+
                         slotsHtml += `
                             <div class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm text-xs space-y-1.5">
-                                <div class="flex items-center justify-between">
+                                <div class="flex items-center justify-between flex-wrap gap-2">
                                     <div class="flex items-center space-x-2">
                                         <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg">${slot.time}</span>
-                                        <span class="bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded-md">[${slotCat}]</span>
+                                        
+                                        <!-- 💡 每個行程旁邊直接就是可點擊修改的類別下拉選單 (顏色區隔為琥珀橘色系) -->
+                                        <select onchange="updateSlotCategory('${day.id}', '${slot.id}', this.value)" class="bg-amber-50 text-amber-800 border border-amber-200 font-semibold px-2 py-0.5 rounded-md outline-none cursor-pointer hover:bg-amber-100 transition">
+                                            ${slotCatOptions}
+                                            <option value="ADD_NEW" class="font-bold text-amber-700">+ 自行新增...</option>
+                                        </select>
+
                                         <span class="text-slate-800 font-medium">${slot.content}</span>
                                     </div>
                                     <div class="flex items-center space-x-1">
@@ -762,10 +795,9 @@
                         <input type="text" id="time-${day.id}" required placeholder="時間 (例如 08:00)" 
                                class="w-full sm:w-24 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
                         
-                        <!-- 類別下拉選單 (含自訂) -->
-                        <select id="category-select-${day.id}" onchange="handleCategoryChange('${day.id}')" class="w-28 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white font-medium text-indigo-700">
+                        <select id="category-select-${day.id}" onchange="handleCategoryChange('${day.id}')" class="w-28 px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 focus:ring-2 focus:ring-amber-500 outline-none text-xs font-semibold text-amber-800">
                             ${catOptionsHtml}
-                            <option value="ADD_NEW" class="text-indigo-600 font-bold">+ 自行新增類別...</option>
+                            <option value="ADD_NEW" class="font-bold text-amber-700">+ 自行新增類別...</option>
                         </select>
 
                         <select id="select-${day.id}" class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs bg-white">
