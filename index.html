@@ -433,7 +433,7 @@
                 currentProj.itinerary = currentProj.itinerary.filter(d => d.id !== dayId);
                 saveDataToCloud();
                 renderItineraryModal();
-                renderItems(); // 同步更新外面卡片按鈕狀態
+                renderItems();
             }
         }
 
@@ -465,7 +465,7 @@
                 inputEl.value = '';
                 saveDataToCloud();
                 renderItineraryModal();
-                renderItems(); // 💡 關鍵：從裡面下拉新增後，立刻同步更新外面卡片按鈕為已加入
+                renderItems();
             }
         }
 
@@ -476,7 +476,30 @@
                 day.slots = day.slots.filter(s => s.id !== slotId);
                 saveDataToCloud();
                 renderItineraryModal();
-                renderItems(); // 💡 關鍵：從裡面刪除後，外面的已加入按鈕也會同步恢復
+                renderItems();
+            }
+        }
+
+        // 💡 新增：修改已存在的行程時間或活動內容
+        function editItinerarySlot(dayId, slotId) {
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const day = currentProj.itinerary.find(d => d.id === dayId);
+            if (!day) return;
+            const slot = day.slots.find(s => s.id === slotId);
+            if (!slot) return;
+
+            const newTime = prompt('請修改時間：', slot.time);
+            if (newTime === null) return;
+            const newContent = prompt('請修改活動內容或地點：', slot.content);
+            if (newContent === null) return;
+
+            if (newTime.trim() && newContent.trim()) {
+                slot.time = newTime.trim();
+                slot.content = newContent.trim();
+                day.slots.sort((a, b) => a.time.localeCompare(b.time)); // 重新依時間排序
+                saveDataToCloud();
+                renderItineraryModal();
+                renderItems();
             }
         }
 
@@ -583,6 +606,10 @@
                                         <span class="text-slate-800 font-medium">${slot.content}</span>
                                     </div>
                                     <div class="flex items-center space-x-1">
+                                        <!-- 編輯按鈕 -->
+                                        <button onclick="editItinerarySlot('${day.id}', '${slot.id}')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition flex items-center" title="修改時間或內容">
+                                            <i class="fa-solid fa-pen mr-1"></i> 編輯
+                                        </button>
                                         <button onclick="editSlotNotes('${day.id}', '${slot.id}')" class="px-2.5 py-1 rounded-lg transition flex items-center ${hasNotes ? 'bg-indigo-600 text-white font-medium shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}" title="${hasNotes ? '檢視/修改備註' : '新增備註（地址、營業時間等）'}">
                                             <i class="fa-solid fa-file-lines mr-1"></i> ${hasNotes ? '有備註' : '備註'}
                                         </button>
@@ -963,7 +990,7 @@
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
                                 </h4>
-                                <!-- 右上角加入行程按鈕 (雙向連動已加入) -->
+                                <!-- 右上角加入行程按鈕 -->
                                 <button onclick="openQuickAddModal('${item.name.replace(/'/g, "\\'")}')" class="absolute top-4 right-4 px-3.5 py-1.5 rounded-xl text-xs transition flex items-center shadow-sm ${addBtnClass}" title="快速加入行程">
                                     ${addBtnText}
                                 </button>
