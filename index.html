@@ -394,7 +394,7 @@
         // 行程規劃相關操作
         function openItineraryModal() {
             renderItineraryModal();
-            document.getElementById('itinerary-modal').classList.add('hidden'); // 先關閉可能開著的
+            document.getElementById('itinerary-modal').classList.add('hidden');
             document.getElementById('itinerary-modal').classList.remove('hidden');
         }
 
@@ -433,6 +433,7 @@
                 currentProj.itinerary = currentProj.itinerary.filter(d => d.id !== dayId);
                 saveDataToCloud();
                 renderItineraryModal();
+                renderItems(); // 同步更新外面卡片按鈕狀態
             }
         }
 
@@ -443,7 +444,6 @@
             const inputEl = document.getElementById(`input-${dayId}`);
 
             const time = timeInput.value.trim();
-            // 優先抓取下拉選單的值，若下拉沒選或切換成手動則抓文字框
             let content = selectEl.value ? selectEl.value : inputEl.value.trim();
 
             if (!time || !content) return;
@@ -465,6 +465,7 @@
                 inputEl.value = '';
                 saveDataToCloud();
                 renderItineraryModal();
+                renderItems(); // 💡 關鍵：從裡面下拉新增後，立刻同步更新外面卡片按鈕為已加入
             }
         }
 
@@ -475,6 +476,7 @@
                 day.slots = day.slots.filter(s => s.id !== slotId);
                 saveDataToCloud();
                 renderItineraryModal();
+                renderItems(); // 💡 關鍵：從裡面刪除後，外面的已加入按鈕也會同步恢復
             }
         }
 
@@ -493,7 +495,6 @@
             }
         }
 
-        // 快速加入行程互動功能
         function openQuickAddModal(itemName) {
             const currentProj = projects.find(p => p.id === currentProjectId);
             if (!currentProj || !currentProj.itinerary || currentProj.itinerary.length === 0) {
@@ -524,7 +525,7 @@
         }
 
         function addQuickAddSlot(dayId, itemName) {
-            const time = prompt('請輸入預計抵達時間（例如 13:00）：', '10:00');
+            const time = prompt('請輸入預計抵達時間（例如 10:00）：', '10:00');
             if (!time) return;
 
             const currentProj = projects.find(p => p.id === currentProjectId);
@@ -539,6 +540,7 @@
                 day.slots.sort((a, b) => a.time.localeCompare(b.time));
                 saveDataToCloud();
                 closeQuickAddModal();
+                renderItems(); 
                 alert(`成功將「${itemName}」加入行程中！`);
             }
         }
@@ -552,7 +554,6 @@
             const nextDayNum = (currentProj.itinerary ? currentProj.itinerary.length : 0) + 1;
             if (badge) badge.textContent = `Day ${nextDayNum}`;
 
-            // 收集專案裡所有景點與美食名稱供下拉選單使用
             let itemOptionsHtml = '<option value="">-- 從投票清單下拉選擇景點 --</option>';
             if (currentProj.items && currentProj.items.length > 0) {
                 currentProj.items.forEach(item => {
@@ -884,11 +885,27 @@
                 const maybeCount = item.votes.maybe.length;
                 const noCount = item.votes.no.length;
 
-                // 檢查是否有人投票（只要有人投過票，右上角的加入按鈕就會發亮）
+                let isAlreadyAdded = false;
+                if (currentProj.itinerary) {
+                    for (const day of currentProj.itinerary) {
+                        if (day.slots && day.slots.some(s => s.content === item.name)) {
+                            isAlreadyAdded = true;
+                            break;
+                        }
+                    }
+                }
+
                 const hasAnyVotes = yesCount > 0 || maybeCount > 0 || noCount > 0;
-                const addBtnClass = hasAnyVotes 
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200 font-bold' 
-                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200 font-medium';
+                
+                let addBtnClass = 'bg-slate-100 text-slate-500 hover:bg-slate-200 font-medium';
+                let addBtnText = '<i class="fa-solid fa-plus mr-1"></i> 加入行程';
+                
+                if (isAlreadyAdded) {
+                    addBtnClass = 'bg-emerald-600 text-white shadow-md shadow-emerald-200 font-bold';
+                    addBtnText = '<i class="fa-solid fa-check mr-1"></i> 已加入';
+                } else if (hasAnyVotes) {
+                    addBtnClass = 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200 font-bold';
+                }
 
                 const yesClass = yesCount > 0 
                     ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 font-bold' 
@@ -946,9 +963,9 @@
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
                                 </h4>
-                                <!-- 右上角加入行程按鈕 (有點票時會發亮) -->
+                                <!-- 右上角加入行程按鈕 (雙向連動已加入) -->
                                 <button onclick="openQuickAddModal('${item.name.replace(/'/g, "\\'")}')" class="absolute top-4 right-4 px-3.5 py-1.5 rounded-xl text-xs transition flex items-center shadow-sm ${addBtnClass}" title="快速加入行程">
-                                    <i class="fa-solid fa-plus mr-1"></i> 加入行程
+                                    ${addBtnText}
                                 </button>
                             </div>
 
